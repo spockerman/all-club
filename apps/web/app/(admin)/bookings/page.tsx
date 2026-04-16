@@ -1,4 +1,7 @@
+import { PageHeader } from '@/components/ui/page-header'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { api } from '@/lib/api'
+import { BOOKING_STATUS_LABEL, BOOKING_STATUS_VARIANT } from '@/lib/booking-labels'
 import { linkActionClassName } from '@/lib/primary-button'
 import Link from 'next/link'
 
@@ -12,33 +15,22 @@ interface BookingSummary {
   createdAt: string
 }
 
-const STATUS_LABEL: Record<string, string> = {
-  CONFIRMADO: 'Confirmado',
-  CANCELADO: 'Cancelado',
-  EXPIRADO: 'Expirado',
-}
-
-const STATUS_COLOR: Record<string, string> = {
-  CONFIRMADO: 'bg-green-100 text-green-800',
-  CANCELADO: 'bg-red-100 text-red-800',
-  EXPIRADO: 'bg-gray-100 text-gray-600',
-}
-
 export default async function BookingsPage() {
   const bookings = await api.get<BookingSummary[]>('/bookings').catch(() => [] as BookingSummary[])
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Agendamentos</h1>
-      </div>
+      <PageHeader title="Agendamentos" />
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               {['Sócio', 'Área', 'Data', 'Horário', 'Status', 'Criado em'].map((h) => (
-                <th key={h} className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th
+                  key={h}
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
                   {h}
                 </th>
               ))}
@@ -63,9 +55,10 @@ export default async function BookingsPage() {
                   {b.slot.startTime} – {b.slot.endTime}
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLOR[b.status]}`}>
-                    {STATUS_LABEL[b.status]}
-                  </span>
+                  <StatusBadge
+                    label={BOOKING_STATUS_LABEL[b.status] ?? b.status}
+                    variant={BOOKING_STATUS_VARIANT[b.status] ?? 'gray'}
+                  />
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-500">
                   {new Date(b.createdAt).toLocaleDateString('pt-BR')}

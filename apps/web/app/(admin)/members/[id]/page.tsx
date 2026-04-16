@@ -1,7 +1,10 @@
 import { DeleteMemberButton } from '@/components/members/delete-member-button'
+import { Breadcrumb } from '@/components/ui/breadcrumb'
+import { DetailCard, DetailField } from '@/components/ui/detail-card'
 import { PrimaryNavigateButton } from '@/components/ui/primary-navigate-button'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { api } from '@/lib/api'
-import { CATEGORY_LABEL, STATUS_LABEL } from '@/lib/member-labels'
+import { CATEGORY_LABEL, MEMBER_STATUS_VARIANT, STATUS_LABEL } from '@/lib/member-labels'
 import { linkActionClassName } from '@/lib/primary-button'
 import type { Member } from '@all-club/shared'
 import Link from 'next/link'
@@ -20,21 +23,28 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
 
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/members" className="text-sm text-gray-500 hover:text-gray-700">
-          ← Sócios
-        </Link>
-        <span className="text-gray-300">/</span>
-        <h1 className="text-2xl font-bold">{member.name}</h1>
-      </div>
+      <Breadcrumb segments={[{ label: 'Sócios', href: '/members' }, { label: member.name }]} />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
-        <Field label="E-mail" value={member.email} />
-        <Field label="Telefone" value={member.phone ?? '—'} />
-        <Field label="Categoria" value={CATEGORY_LABEL[member.category]} />
-        <Field label="Status" value={STATUS_LABEL[member.status]} />
-        {member.holder && <Field label="Titular" value={`${member.holder.name} (${member.holder.email})`} />}
-      </div>
+      <DetailCard>
+        <DetailField label="E-mail" value={member.email} />
+        <DetailField label="Telefone" value={member.phone ?? '—'} />
+        <DetailField label="Categoria" value={CATEGORY_LABEL[member.category]} />
+        <DetailField
+          label="Status"
+          value={
+            <StatusBadge
+              label={STATUS_LABEL[member.status]}
+              variant={MEMBER_STATUS_VARIANT[member.status]}
+            />
+          }
+        />
+        {member.holder && (
+          <DetailField
+            label="Titular"
+            value={`${member.holder.name} (${member.holder.email})`}
+          />
+        )}
+      </DetailCard>
 
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <PrimaryNavigateButton href={`/members/${member.id}/edit`}>Editar</PrimaryNavigateButton>
@@ -59,15 +69,6 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
           </ul>
         </div>
       )}
-    </div>
-  )
-}
-
-function Field({ label, value }: { label: string; value: string }) {
-  return (
-    <div>
-      <dt className="text-xs font-medium text-gray-500 uppercase tracking-wider">{label}</dt>
-      <dd className="mt-1 text-sm text-gray-900">{value}</dd>
     </div>
   )
 }

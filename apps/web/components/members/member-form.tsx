@@ -17,9 +17,13 @@ type Props = {
   mode: 'create' | 'edit'
   member?: Member
   titulares: TitularOption[]
+  onSuccess?: () => void
+  onCancel?: () => void
+  submitLabel?: string
+  hideCancel?: boolean
 }
 
-export function MemberForm({ mode, member, titulares }: Props) {
+export function MemberForm({ mode, member, titulares, onSuccess, onCancel, submitLabel, hideCancel }: Props) {
   const router = useRouter()
   const [name, setName] = useState(member?.name ?? '')
   const [email, setEmail] = useState(member?.email ?? '')
@@ -67,8 +71,12 @@ export function MemberForm({ mode, member, titulares }: Props) {
           holderId: category === 'TITULAR' ? null : holderId || undefined,
         }
         await api.patch<Member>(`/members/${member.id}`, body)
-        router.push(`/members/${member.id}`)
         router.refresh()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.push(`/members/${member.id}`)
+        }
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao salvar')
@@ -193,17 +201,19 @@ export function MemberForm({ mode, member, titulares }: Props) {
         </div>
       )}
 
-      <div className="flex items-center gap-3 pt-2">
+      <div className={`flex items-center gap-3 pt-2 ${hideCancel ? 'justify-center' : ''}`}>
         <button type="submit" disabled={loading} className={primaryButtonClassName}>
-          {loading ? 'Salvando…' : mode === 'create' ? 'Cadastrar' : 'Salvar alterações'}
+          {loading ? 'Salvando…' : (submitLabel ?? (mode === 'create' ? 'Cadastrar' : 'Salvar alterações'))}
         </button>
-        <button
-          type="button"
-          onClick={() => router.back()}
-          className="text-sm text-gray-600 hover:text-gray-900 px-2"
-        >
-          Cancelar
-        </button>
+        {!hideCancel && (
+          <button
+            type="button"
+            onClick={() => (onCancel ? onCancel() : router.back())}
+            className="text-sm text-gray-600 hover:text-gray-900 px-2"
+          >
+            Cancelar
+          </button>
+        )}
       </div>
     </form>
   )

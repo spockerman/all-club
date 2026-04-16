@@ -1,6 +1,6 @@
+import { Breadcrumb } from '@/components/ui/breadcrumb'
 import { api } from '@/lib/api'
 import type { Area } from '@all-club/shared'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 
 interface AvailabilitySlot {
@@ -22,8 +22,13 @@ interface AreaDetail extends Area {
 }
 
 const DAY_LABELS: Record<string, string> = {
-  SEGUNDA: 'Segunda', TERCA: 'Terça', QUARTA: 'Quarta',
-  QUINTA: 'Quinta', SEXTA: 'Sexta', SABADO: 'Sábado', DOMINGO: 'Domingo',
+  SEGUNDA: 'Segunda',
+  TERCA: 'Terça',
+  QUARTA: 'Quarta',
+  QUINTA: 'Quinta',
+  SEXTA: 'Sexta',
+  SABADO: 'Sábado',
+  DOMINGO: 'Domingo',
 }
 
 export default async function AreaDetailPage({ params }: { params: { id: string } }) {
@@ -32,16 +37,18 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
 
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center gap-3 mb-6">
-        <Link href="/areas" className="text-sm text-gray-500 hover:text-gray-700">← Áreas</Link>
-        <span className="text-gray-300">/</span>
-        <h1 className="text-2xl font-bold">{area.name}</h1>
-      </div>
+      <Breadcrumb segments={[{ label: 'Áreas', href: '/areas' }, { label: area.name }]} />
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-3">
         {area.description && <p className="text-sm text-gray-600">{area.description}</p>}
-        <p className="text-sm"><span className="font-medium">Capacidade:</span> {area.capacity} pessoas</p>
-        {area.rules && <p className="text-sm"><span className="font-medium">Regras:</span> {area.rules}</p>}
+        <p className="text-sm">
+          <span className="font-medium">Capacidade:</span> {area.capacity} pessoas
+        </p>
+        {area.rules && (
+          <p className="text-sm">
+            <span className="font-medium">Regras:</span> {area.rules}
+          </p>
+        )}
       </div>
 
       <div className="mt-6">
@@ -53,7 +60,9 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
             {area.availabilitySlots.map((slot) => (
               <li key={slot.id} className="px-4 py-3 flex items-center justify-between text-sm">
                 <span className="font-medium">{DAY_LABELS[slot.dayOfWeek]}</span>
-                <span className="text-gray-600">{slot.startTime} – {slot.endTime}</span>
+                <span className="text-gray-600">
+                  {slot.startTime} – {slot.endTime}
+                </span>
               </li>
             ))}
           </ul>

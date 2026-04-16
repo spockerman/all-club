@@ -15,7 +15,12 @@ export class MembersService {
         category: filters.category as MemberCategory | undefined,
         holderId: filters.holderId,
       },
-      include: { dependents: true },
+      include: {
+        dependents: true,
+        holder: {
+          select: { id: true, name: true },
+        },
+      },
       orderBy: { name: 'asc' },
     })
   }

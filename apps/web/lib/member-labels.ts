@@ -12,3 +12,10 @@ export const STATUS_LABEL: Record<MemberStatus, string> = {
   INATIVO: 'Inativo',
   PENDENTE: 'Pendente',
 }
+
+export const MEMBER_STATUS_VARIANT: Record<MemberStatus, 'green' | 'yellow' | 'gray'> = {
+  ATIVO: 'green',
+  SUSPENSO: 'yellow',
+  INATIVO: 'gray',
+  PENDENTE: 'gray',
+}
