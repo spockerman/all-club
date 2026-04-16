@@ -1,5 +1,6 @@
 'use client'
 
+import { eficienciaEquipe } from '@/lib/dashboard-fake-data'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { type ReactNode } from 'react'
@@ -25,7 +26,8 @@ export function AdminAppShell({ children }: { children: ReactNode }) {
   const inactive = `${linkBase} text-on-surface-variant hover:bg-gray-50`
   const active = `${linkBase} bg-gray-100 text-on-surface font-semibold`
 
-  const painelActive = pathname === '/members' || pathname?.startsWith('/members/')
+  const painelActive = pathname === '/dashboard'
+  const sociosActive = pathname === '/members' || pathname?.startsWith('/members/')
 
   return (
     <>
@@ -34,7 +36,7 @@ export function AdminAppShell({ children }: { children: ReactNode }) {
         <div className="text-2xl font-black tracking-tighter text-on-surface mb-8 px-4">All Club</div>
         <nav className="flex-1 space-y-1">
           <Link
-            href="/members"
+            href="/dashboard"
             className={
               painelActive
                 ? 'flex items-center justify-between px-4 py-2.5 bg-gray-100 text-on-surface rounded-lg transition-all'
@@ -45,6 +47,18 @@ export function AdminAppShell({ children }: { children: ReactNode }) {
               <NavIcon name="grid_view" />
               <span className="text-sm font-semibold">Painel</span>
             </div>
+          </Link>
+
+          <Link
+            href="/members"
+            className={
+              sociosActive
+                ? `${linkBase} bg-gray-100 text-on-surface font-semibold`
+                : inactive
+            }
+          >
+            <NavIcon name="group" />
+            Sócios
           </Link>
 
           <div className="space-y-1">
@@ -146,39 +160,17 @@ export function AdminAppShell({ children }: { children: ReactNode }) {
       {/* Painel direito — sem toggles de moeda */}
       <aside className="fixed top-16 right-0 w-80 h-[calc(100vh-4rem)] bg-white border-l border-gray-200 z-10 p-6 flex flex-col overflow-y-auto custom-scrollbar">
         <div className="flex items-center justify-between mb-8">
-          <h2 className="text-lg font-bold text-on-surface">Desempenho</h2>
+          <h2 className="text-lg font-bold text-on-surface">Equipe &amp; atendimento</h2>
         </div>
         <div className="space-y-8 flex-1">
-          {[
-            {
-              name: 'Ann Dokidis',
-              initials: 'AD',
-              pct: '79.3%',
-              width: '79.3%',
-              bar: 'bg-gray-900',
-            },
-            {
-              name: 'Anika Levin',
-              initials: 'AL',
-              pct: '67.1%',
-              width: '67.1%',
-              bar: 'bg-gray-400',
-            },
-            {
-              name: 'Kadin Bator',
-              initials: 'KB',
-              pct: '48.4%',
-              width: '48.4%',
-              bar: 'bg-gray-400',
-            },
-          ].map((row) => (
-            <div key={row.name}>
+          {eficienciaEquipe.map((row) => (
+            <div key={row.nome}>
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2 min-w-0">
                   <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-[10px] font-bold text-on-surface shrink-0">
-                    {row.initials}
+                    {row.iniciais}
                   </div>
-                  <span className="text-xs font-bold text-on-surface truncate">{row.name}</span>
+                  <span className="text-xs font-bold text-on-surface truncate">{row.nome}</span>
                 </div>
                 <span className="text-xs font-bold text-on-surface shrink-0">{row.pct}</span>
               </div>
