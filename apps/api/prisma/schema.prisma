@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MemberCategory {
+  TITULAR
+  DEPENDENTE
+  CONVIDADO
+}
+
+enum MemberStatus {
+  ATIVO
+  SUSPENSO
+  INATIVO
+  PENDENTE
+}
+
+enum BookingStatus {
+  CONFIRMADO
+  CANCELADO
+  EXPIRADO
+}
+
+enum DayOfWeek {
+  SEGUNDA
+  TERCA
+  QUARTA
+  QUINTA
+  SEXTA
+  SABADO
+  DOMINGO
+}
+
+model Member {
+  id        String         @id @default(uuid())
+  name      String
+  email     String         @unique
+  phone     String?
+  photoUrl  String?
+  category  MemberCategory @default(TITULAR)
+  status    MemberStatus   @default(PENDENTE)
+
+  // Auto-relação: titular → dependentes
+  holderId    String?
+  holder      Member?  @relation("HolderDependents", fields: [holderId], references: [id])
+  dependents  Member[] @relation("HolderDependents")
+
+  bookings  Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([holderId])
+  @@index([status])
+}
+
+model Area {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  capacity    Int
+  rules       String?
+  active      Boolean  @default(true)
+
+  availabilitySlots AvailabilitySlot[]
+  blockedDates      BlockedDate[]
+  bookings          Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AvailabilitySlot {
+  id        String    @id @default(uuid())
+  areaId    String
+  area      Area      @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  dayOfWeek DayOfWeek
+  startTime String    // HH:mm
+  endTime   String    // HH:mm
+
+  bookings  Booking[]
+
+  @@unique([areaId, dayOfWeek, startTime])
+  @@index([areaId])
+}
+
+model BlockedDate {
+  id     String   @id @default(uuid())
+  areaId String
+  area   Area     @relation(fields: [areaId], references: [id], onDelete: Cascade)
+  date   DateTime @db.Date
+  reason String?
+
+  @@unique([areaId, date])
+  @@index([areaId])
+}
+
+model Booking {
+  id       String        @id @default(uuid())
+  memberId String
+  member   Member        @relation(fields: [memberId], references: [id])
+  areaId   String
+  area     Area          @relation(fields: [areaId], references: [id])
+  slotId   String
+  slot     AvailabilitySlot @relation(fields: [slotId], references: [id])
+  date     DateTime      @db.Date
+  status   BookingStatus @default(CONFIRMADO)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Evita duplo agendamento no mesmo slot/data
+  @@unique([areaId, slotId, date, status])
+  @@index([memberId])
+  @@index([areaId, date])
+}
