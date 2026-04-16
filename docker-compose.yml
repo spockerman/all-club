@@ -5,13 +5,13 @@ services:
       POSTGRES_USER: allclub
       POSTGRES_PASSWORD: allclub_secret
       POSTGRES_DB: allclub
-      PGPORT: "5433"
     ports:
-      - "5433:5433"
+      # host:container — Postgres escuta na 5432 dentro do container
+      - "5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U allclub -d allclub -p 5433"]
+      test: ["CMD-SHELL", "pg_isready -U allclub -d allclub -p 5432"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -23,7 +23,7 @@ services:
     ports:
       - "3001:3001"
     environment:
-      DATABASE_URL: "postgresql://allclub:allclub_secret@postgres:5433/allclub"
+      DATABASE_URL: "postgresql://allclub:allclub_secret@postgres:5432/allclub"
       JWT_SECRET: "troque-por-secret-seguro-em-producao"
       PORT: "3001"
       NODE_ENV: production

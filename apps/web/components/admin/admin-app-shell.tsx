@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { type ReactNode } from 'react'
 
-const subNav = [
+const areasBookingsNav = [
   { href: '/areas', label: 'Áreas comuns', icon: 'holiday_village' },
   { href: '/bookings', label: 'Agendamentos', icon: 'event' },
 ] as const
@@ -61,24 +61,16 @@ export function AdminAppShell({ children }: { children: ReactNode }) {
             Sócios
           </Link>
 
-          <div className="space-y-1">
-            <div className="px-4 py-2 flex items-center gap-3 text-on-surface-variant">
-              <NavIcon name="ad_units" />
-              <span className="text-sm font-medium">Anúncios</span>
-            </div>
-            <div className="space-y-0.5 pl-2 ml-4 border-l border-gray-100">
-              {subNav.map((item) => {
-                const isActive =
-                  pathname === item.href || pathname?.startsWith(`${item.href}/`)
-                return (
-                  <Link key={item.href} href={item.href} className={isActive ? active : inactive}>
-                    <NavIcon name={item.icon} />
-                    {item.label}
-                  </Link>
-                )
-              })}
-            </div>
-          </div>
+          {areasBookingsNav.map((item) => {
+            const isActive =
+              pathname === item.href || pathname?.startsWith(`${item.href}/`)
+            return (
+              <Link key={item.href} href={item.href} className={isActive ? active : inactive}>
+                <NavIcon name={item.icon} />
+                {item.label}
+              </Link>
+            )
+          })}
 
           <Link href="#" className={inactive}>
             <NavIcon name="handshake" />

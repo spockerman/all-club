@@ -1,5 +1,5 @@
+import { PrimaryNavigateButton } from '@/components/ui/primary-navigate-button'
 import { api } from '@/lib/api'
-import { primaryButtonClassName } from '@/lib/primary-button'
 import type { Area } from '@all-club/shared'
 import Link from 'next/link'
 
@@ -14,12 +14,7 @@ export default async function AreasPage() {
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Áreas Comuns</h1>
-        <Link
-          href="/areas/new"
-          className={primaryButtonClassName}
-        >
-          + Nova Área
-        </Link>
+        <PrimaryNavigateButton href="/areas/new">+ Nova Área</PrimaryNavigateButton>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

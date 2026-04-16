@@ -10,6 +10,8 @@ export const createMemberSchema = z.object({
 
 export const updateMemberSchema = createMemberSchema.partial().extend({
   status: z.enum(['ATIVO', 'SUSPENSO', 'INATIVO', 'PENDENTE']).optional(),
+  /** `null` remove o vínculo com titular (ex.: ao mudar para TITULAR). */
+  holderId: z.string().uuid().nullable().optional(),
 })
 
 export type CreateMemberInput = z.infer<typeof createMemberSchema>

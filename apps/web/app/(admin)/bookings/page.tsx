@@ -1,4 +1,5 @@
 import { api } from '@/lib/api'
+import { linkActionClassName } from '@/lib/primary-button'
 import Link from 'next/link'
 
 interface BookingSummary {
@@ -51,7 +52,7 @@ export default async function BookingsPage() {
                   <p className="text-xs text-gray-500">{b.member.email}</p>
                 </td>
                 <td className="px-4 py-3 text-sm">
-                  <Link href={`/areas/${b.area.id}`} className="text-primary font-medium hover:underline">
+                  <Link href={`/areas/${b.area.id}`} className={linkActionClassName}>
                     {b.area.name}
                   </Link>
                 </td>

@@ -1,5 +1,6 @@
 import Link from 'next/link'
-import { primaryButtonClassName } from '@/lib/primary-button'
+import { PrimaryNavigateButton } from '@/components/ui/primary-navigate-button'
+import { outlineButtonClassName } from '@/lib/primary-button'
 import {
   dashboardMetrics,
   receitaRecorrente,
@@ -264,10 +265,10 @@ export function ClubDashboard() {
         <div className="bg-surface-container-lowest rounded-xl p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-[1.5rem] font-bold text-on-surface">Reservas em destaque</h2>
-            <Link href="/bookings" className={primaryButtonClassName}>
+            <PrimaryNavigateButton href="/bookings">
               <Icon name="add" className="text-[16px]" />
               Nova reserva
-            </Link>
+            </PrimaryNavigateButton>
           </div>
 
           <div className="flex items-center gap-6 mb-6 text-xs font-bold text-on-surface-variant">
@@ -317,17 +318,11 @@ export function ClubDashboard() {
                   </div>
                   <p className="text-[11px] text-on-surface-variant mb-4">{reservaDestaque.data}</p>
                   <div className="flex gap-2 justify-end">
-                    <Link
-                      href="/bookings"
-                      className="ghost-border px-3 py-1.5 rounded-md text-[11px] font-bold flex items-center gap-1 text-on-surface hover:bg-surface-container transition-colors"
-                    >
+                    <Link href="/bookings" className={outlineButtonClassName}>
                       <Icon name="north_east" className="text-[14px]" />
                       Detalhes
                     </Link>
-                    <Link
-                      href="/areas"
-                      className="ghost-border px-3 py-1.5 rounded-md text-[11px] font-bold flex items-center gap-1 text-on-surface hover:bg-surface-container transition-colors"
-                    >
+                    <Link href="/areas" className={outlineButtonClassName}>
                       <Icon name="edit" className="text-[14px]" />
                       Área
                     </Link>

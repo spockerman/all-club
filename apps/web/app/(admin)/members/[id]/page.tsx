@@ -1,7 +1,13 @@
+import { DeleteMemberButton } from '@/components/members/delete-member-button'
+import { PrimaryNavigateButton } from '@/components/ui/primary-navigate-button'
 import { api } from '@/lib/api'
+import { CATEGORY_LABEL, STATUS_LABEL } from '@/lib/member-labels'
+import { linkActionClassName } from '@/lib/primary-button'
 import type { Member } from '@all-club/shared'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+
+export const dynamic = 'force-dynamic'
 
 interface MemberWithRelations extends Member {
   dependents: Member[]
@@ -25,9 +31,14 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-4">
         <Field label="E-mail" value={member.email} />
         <Field label="Telefone" value={member.phone ?? '—'} />
-        <Field label="Categoria" value={member.category} />
-        <Field label="Status" value={member.status} />
+        <Field label="Categoria" value={CATEGORY_LABEL[member.category]} />
+        <Field label="Status" value={STATUS_LABEL[member.status]} />
         {member.holder && <Field label="Titular" value={`${member.holder.name} (${member.holder.email})`} />}
+      </div>
+
+      <div className="mt-6 flex flex-wrap items-center gap-3">
+        <PrimaryNavigateButton href={`/members/${member.id}/edit`}>Editar</PrimaryNavigateButton>
+        <DeleteMemberButton memberId={member.id} memberName={member.name} />
       </div>
 
       {member.dependents.length > 0 && (
@@ -40,7 +51,7 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
                   <p className="text-sm font-medium">{d.name}</p>
                   <p className="text-xs text-gray-500">{d.email}</p>
                 </div>
-                <Link href={`/members/${d.id}`} className="text-sm text-primary font-medium hover:underline">
+                <Link href={`/members/${d.id}`} className={`text-sm ${linkActionClassName}`}>
                   Ver
                 </Link>
               </li>

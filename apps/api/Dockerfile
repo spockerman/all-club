@@ -32,5 +32,5 @@ COPY package.json ./
 WORKDIR /app/apps/api
 EXPOSE 3001
 
-# prisma db push cria as tabelas a partir do schema (sem arquivos de migration)
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/main.js"]
+# Aplica migrações versionadas e inicia a API
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
