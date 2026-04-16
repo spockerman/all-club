@@ -50,7 +50,8 @@ model Member {
   holder      Member?  @relation("HolderDependents", fields: [holderId], references: [id])
   dependents  Member[] @relation("HolderDependents")
 
-  bookings  Booking[]
+  bookings           Booking[]
+  agendaReservations AgendaReservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -70,6 +71,8 @@ model Area {
   availabilitySlots AvailabilitySlot[]
   blockedDates      BlockedDate[]
   bookings          Booking[]
+  agendas           Agenda[]
+  scheduleConfigs   ScheduleConfig[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -118,4 +121,103 @@ model Booking {
   @@unique([areaId, slotId, date, status])
   @@index([memberId])
   @@index([areaId, date])
+}
+
+// ── Agenda domain (English DDL) ───────────────────────────────────────────────
+
+enum AgendaPeriod {
+  MORNING
+  AFTERNOON
+  EVENING
+  ALL_DAY
+}
+
+enum AgendaStatus {
+  AVAILABLE
+  RESERVED
+  CANCELLED
+}
+
+enum ReservationStatus {
+  CONFIRMED
+  CANCELLED
+}
+
+enum TriggerType {
+  AUTOMATIC
+  MANUAL
+}
+
+enum ScheduleLogStatus {
+  SUCCESS
+  FAILURE
+  PARTIAL
+}
+
+model Agenda {
+  id        String       @id @default(uuid())
+  areaId    String
+  area      Area         @relation(fields: [areaId], references: [id])
+  date      DateTime     @db.Date
+  period    AgendaPeriod
+  status    AgendaStatus @default(AVAILABLE)
+
+  reservation AgendaReservation?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([areaId, date, period])
+  @@index([areaId, date])
+  @@index([status])
+  @@index([date])
+}
+
+model AgendaReservation {
+  id           String            @id @default(uuid())
+  agendaId     String            @unique
+  agenda       Agenda            @relation(fields: [agendaId], references: [id])
+  memberId     String
+  member       Member            @relation(fields: [memberId], references: [id])
+  status       ReservationStatus @default(CONFIRMED)
+  cancelReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([memberId])
+}
+
+model ScheduleConfig {
+  id             String       @id @default(uuid())
+  areaId         String
+  area           Area         @relation(fields: [areaId], references: [id])
+  cronExpression String
+  period         AgendaPeriod
+  daysAhead      Int          @default(7)
+  description    String?
+  active         Boolean      @default(true)
+
+  logs ScheduleLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([areaId])
+}
+
+model ScheduleLog {
+  id               String            @id @default(uuid())
+  scheduleConfigId String
+  config           ScheduleConfig    @relation(fields: [scheduleConfigId], references: [id])
+  executedAt       DateTime          @default(now())
+  triggerType      TriggerType
+  status           ScheduleLogStatus
+  agendasCreated   Int               @default(0)
+  agendasSkipped   Int               @default(0)
+  errorMessage     String?
+  details          Json?
+
+  @@index([scheduleConfigId])
+  @@index([executedAt])
 }

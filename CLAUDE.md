@@ -125,6 +125,7 @@ components/
 lib/
   member-labels.ts   — CATEGORY_LABEL, STATUS_LABEL, MEMBER_STATUS_VARIANT
   booking-labels.ts  — BOOKING_STATUS_LABEL, BOOKING_STATUS_VARIANT
+  agenda-labels.ts   — PERIOD_LABEL, AGENDA_STATUS_LABEL/VARIANT, SCHEDULE_LOG_STATUS_LABEL/VARIANT, TRIGGER_TYPE_LABEL
 ```
 
 Each domain has a `*_STATUS_VARIANT` map that resolves a status enum value to a `StatusBadge` variant string (`green | yellow | gray | red`). Add a new `*-labels.ts` when introducing a new domain with status enums.
@@ -146,11 +147,26 @@ Auth tokens stored via `expo-secure-store`.
 - Unique constraint on `(areaId, slotId, date)` prevents double-booking
 - Enums use Portuguese values matching club terminology (e.g., `SEGUNDA`, `TERCA` for days)
 
+**Agenda domain** (all DDL in English):
+
+`Area` → `Agenda` → `AgendaReservation` ← `Member`  
+`Area` → `ScheduleConfig` → `ScheduleLog`
+
+- `Agenda`: unique on `(areaId, date, period)` — prevents duplicate slots
+- `ALL_DAY` conflicts with any partial period (MORNING/AFTERNOON/EVENING) on same area+date — enforced at service layer in `agendas.conflicts.ts`
+- `AgendaReservation`: `agendaId @unique` — one reservation per agenda slot
+- `ScheduleConfig`: cron job config per area+period; `active` flag controls job registration
+- `ScheduleLog`: immutable audit trail; `status` is SUCCESS / FAILURE / PARTIAL
+- Scheduler plugin (`src/common/plugins/scheduler.plugin.ts`) loads all active configs on boot; exposes `app.scheduler.{register, unregister, reload}`
+- timezone: `America/Sao_Paulo` throughout the scheduler
+
 ## Code Conventions
 
 **Formatting (Prettier):** no semicolons, single quotes, trailing commas, 100-char line width.
 
-**Language:** Portuguese for domain identifiers (enums, Prisma model field names); English for file names and code structure.
+**Language:** English for all DDL (model names, field names, enum names and values, index names). Existing Portuguese enum values (`TITULAR`, `CONFIRMADO`, etc.) are legacy and should not be changed. All new schema elements must use English.
+
+**UI/domain labels:** Portuguese strings live in `lib/*-labels.ts` as display maps — never in the schema itself.
 
 **Validation:** All API inputs validated with Zod `.parse()`. Schemas live in `packages/shared`.
 
@@ -302,6 +318,18 @@ export default async function FeaturePage() {
 ```
 
 **`/new` and `/[id]/edit` pages still exist** for direct URL access, but the primary flow is modal-based.
+
+**Tab switcher in modals:** When a create modal has multiple creation modes (e.g., individual vs. batch), use a pill-style tab switcher at the top of the modal body:
+```tsx
+<div className="flex gap-1 p-1 bg-gray-100 rounded-lg mb-5">
+  {tabs.map((tab) => (
+    <button key={tab} type="button" onClick={() => setTab(tab)}
+      className={`flex-1 py-1.5 text-xs font-semibold rounded-md transition-colors ${
+        activeTab === tab ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+      }`}>{label}</button>
+  ))}
+</div>
+```
 
 ### Adding a new domain (feature)
 

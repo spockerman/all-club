@@ -8,6 +8,9 @@ import { type ReactNode } from 'react'
 const areasBookingsNav = [
   { href: '/areas', label: 'Áreas comuns', icon: 'holiday_village' },
   { href: '/bookings', label: 'Agendamentos', icon: 'event' },
+  { href: '/agendas', label: 'Agendas', icon: 'calendar_month' },
+  { href: '/schedule-configs', label: 'Rotinas', icon: 'schedule' },
+  { href: '/schedule-logs', label: 'Histórico', icon: 'history' },
 ] as const
 
 function NavIcon({ name }: { name: string }) {
