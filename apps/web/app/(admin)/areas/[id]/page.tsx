@@ -1,20 +1,9 @@
 import { Breadcrumb } from '@/components/ui/breadcrumb'
+import { DetailCard, DetailField } from '@/components/ui/detail-card'
+import { PrimaryNavigateButton } from '@/components/ui/primary-navigate-button'
 import { api } from '@/lib/api'
-import type { Area } from '@all-club/shared'
+import type { Area, AvailabilitySlot, BlockedDate } from '@all-club/shared'
 import { notFound } from 'next/navigation'
-
-interface AvailabilitySlot {
-  id: string
-  dayOfWeek: string
-  startTime: string
-  endTime: string
-}
-
-interface BlockedDate {
-  id: string
-  date: string
-  reason?: string
-}
 
 interface AreaDetail extends Area {
   availabilitySlots: AvailabilitySlot[]
@@ -31,6 +20,8 @@ const DAY_LABELS: Record<string, string> = {
   DOMINGO: 'Domingo',
 }
 
+export const dynamic = 'force-dynamic'
+
 export default async function AreaDetailPage({ params }: { params: { id: string } }) {
   const area = await api.get<AreaDetail>(`/areas/${params.id}`).catch(() => null)
   if (!area) notFound()
@@ -39,16 +30,14 @@ export default async function AreaDetailPage({ params }: { params: { id: string 
     <div className="max-w-2xl">
       <Breadcrumb segments={[{ label: 'Áreas', href: '/areas' }, { label: area.name }]} />
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 space-y-3">
-        {area.description && <p className="text-sm text-gray-600">{area.description}</p>}
-        <p className="text-sm">
-          <span className="font-medium">Capacidade:</span> {area.capacity} pessoas
-        </p>
-        {area.rules && (
-          <p className="text-sm">
-            <span className="font-medium">Regras:</span> {area.rules}
-          </p>
-        )}
+      <DetailCard>
+        {area.description && <DetailField label="Descrição" value={area.description} />}
+        <DetailField label="Capacidade" value={`${area.capacity} pessoas`} />
+        {area.rules && <DetailField label="Regras" value={area.rules} />}
+      </DetailCard>
+
+      <div className="mt-6">
+        <PrimaryNavigateButton href={`/areas/${area.id}/edit`}>Editar</PrimaryNavigateButton>
       </div>
 
       <div className="mt-6">

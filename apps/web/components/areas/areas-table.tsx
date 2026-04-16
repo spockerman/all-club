@@ -1,49 +1,42 @@
 'use client'
 
 import { api } from '@/lib/api'
-import { CATEGORY_LABEL, MEMBER_STATUS_VARIANT, STATUS_LABEL } from '@/lib/member-labels'
-import { primaryButtonClassName } from '@/lib/primary-button'
 import { Modal } from '@/components/ui/modal'
-import { StatusBadge } from '@/components/ui/status-badge'
-
-import type { Member } from '@all-club/shared'
+import { primaryButtonClassName } from '@/lib/primary-button'
+import type { Area, AvailabilitySlot } from '@all-club/shared'
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
-import { MemberForm } from './member-form'
+import { AreaForm } from './area-form'
 
-type MemberListItem = Member & {
-  dependents?: unknown[]
-  holder?: { id: string; name: string } | null
+type AreaListItem = Area & {
+  availabilitySlots: AvailabilitySlot[]
 }
 
-type TitularOption = { id: string; name: string }
-
 type Props = {
-  members: MemberListItem[]
-  titulares: TitularOption[]
+  areas: AreaListItem[]
 }
 
 const DOUBLE_CLICK_DELAY = 250
 
-export function MembersTable({ members, titulares }: Props) {
+export function AreasTable({ areas }: Props) {
   const router = useRouter()
   const clickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const [showNew, setShowNew] = useState(false)
-  const [editTarget, setEditTarget] = useState<MemberListItem | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<MemberListItem | null>(null)
+  const [editTarget, setEditTarget] = useState<AreaListItem | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<AreaListItem | null>(null)
   const [deleteLoading, setDeleteLoading] = useState(false)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  function handleRowClick(member: MemberListItem) {
+  function handleRowClick(area: AreaListItem) {
     if (clickTimerRef.current) {
       clearTimeout(clickTimerRef.current)
       clickTimerRef.current = null
-      setDeleteTarget(member)
+      setDeleteTarget(area)
     } else {
       clickTimerRef.current = setTimeout(() => {
         clickTimerRef.current = null
-        setEditTarget(member)
+        setEditTarget(area)
       }, DOUBLE_CLICK_DELAY)
     }
   }
@@ -53,7 +46,7 @@ export function MembersTable({ members, titulares }: Props) {
     setDeleteLoading(true)
     setDeleteError(null)
     try {
-      await api.delete(`/members/${deleteTarget.id}`)
+      await api.delete(`/areas/${deleteTarget.id}`)
       setDeleteTarget(null)
       router.refresh()
     } catch (err) {
@@ -67,7 +60,7 @@ export function MembersTable({ members, titulares }: Props) {
     <>
       <div className="flex justify-end mb-4">
         <button onClick={() => setShowNew(true)} className={primaryButtonClassName}>
-          + Novo Sócio
+          + Nova Área
         </button>
       </div>
 
@@ -75,46 +68,38 @@ export function MembersTable({ members, titulares }: Props) {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              {['Nome', 'E-mail', 'Telefone', 'Categoria', 'Titular', 'Status', 'Dependentes'].map(
-                (h) => (
-                  <th
-                    key={h}
-                    className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                  >
-                    {h}
-                  </th>
-                ),
-              )}
+              {['Nome', 'Descrição', 'Capacidade', 'Horários'].map((h) => (
+                <th
+                  key={h}
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  {h}
+                </th>
+              ))}
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
-            {members.map((m) => (
+            {areas.map((a) => (
               <tr
-                key={m.id}
-                onClick={() => handleRowClick(m)}
+                key={a.id}
+                onClick={() => handleRowClick(a)}
                 className="hover:bg-gray-50 cursor-pointer select-none"
                 title="Clique para editar · Duplo clique para excluir"
               >
-                <td className="px-4 py-3 text-sm font-medium">{m.name}</td>
-                <td className="px-4 py-3 text-sm text-gray-600">{m.email}</td>
-                <td className="px-4 py-3 text-sm text-gray-600">{m.phone ?? '—'}</td>
-                <td className="px-4 py-3 text-sm text-gray-600">{CATEGORY_LABEL[m.category]}</td>
+                <td className="px-4 py-3 text-sm font-medium">{a.name}</td>
+                <td className="px-4 py-3 text-sm text-gray-600 max-w-xs truncate">
+                  {a.description ?? '—'}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-600">{a.capacity} pessoas</td>
                 <td className="px-4 py-3 text-sm text-gray-600">
-                  {m.holder?.name ?? (m.category === 'TITULAR' ? '—' : 'Sem titular')}
+                  {a.availabilitySlots.length} horário{a.availabilitySlots.length !== 1 ? 's' : ''}
                 </td>
-                <td className="px-4 py-3">
-                  <StatusBadge
-                    label={STATUS_LABEL[m.status]}
-                    variant={MEMBER_STATUS_VARIANT[m.status]}
-                  />
-                </td>
-                <td className="px-4 py-3 text-sm text-gray-600">{m.dependents?.length ?? 0}</td>
               </tr>
             ))}
-            {members.length === 0 && (
+            {areas.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-4 py-8 text-center text-sm text-gray-400">
-                  Nenhum sócio cadastrado
+                <td colSpan={4} className="px-4 py-8 text-center text-sm text-gray-400">
+                  Nenhuma área cadastrada
                 </td>
               </tr>
             )}
@@ -123,10 +108,9 @@ export function MembersTable({ members, titulares }: Props) {
       </div>
 
       {showNew && (
-        <Modal title="Novo sócio" size="md" scrollable onClose={() => setShowNew(false)}>
-          <MemberForm
+        <Modal title="Nova área" size="md" scrollable onClose={() => setShowNew(false)}>
+          <AreaForm
             mode="create"
-            titulares={titulares}
             onSuccess={() => setShowNew(false)}
             submitLabel="Cadastrar"
             hideCancel
@@ -135,11 +119,10 @@ export function MembersTable({ members, titulares }: Props) {
       )}
 
       {editTarget && (
-        <Modal title="Editar sócio" size="md" scrollable onClose={() => setEditTarget(null)}>
-          <MemberForm
+        <Modal title="Editar área" size="md" scrollable onClose={() => setEditTarget(null)}>
+          <AreaForm
             mode="edit"
-            member={editTarget}
-            titulares={titulares}
+            area={editTarget}
             onSuccess={() => setEditTarget(null)}
             submitLabel="Salvar"
             hideCancel
@@ -149,14 +132,18 @@ export function MembersTable({ members, titulares }: Props) {
 
       {deleteTarget && (
         <Modal
-          title="Excluir sócio"
+          title="Excluir área"
           size="sm"
-          onClose={() => { if (!deleteLoading) setDeleteTarget(null) }}
+          onClose={() => {
+            if (!deleteLoading) setDeleteTarget(null)
+          }}
         >
           <p className="text-sm text-gray-600 mb-1">Deseja deletar o registro?</p>
-          <p className="text-sm font-medium text-gray-900 mb-4">&ldquo;{deleteTarget.name}&rdquo;</p>
+          <p className="text-sm font-medium text-gray-900 mb-4">
+            &ldquo;{deleteTarget.name}&rdquo;
+          </p>
           <p className="text-xs text-gray-400 mb-5">
-            Esta ação não pode ser desfeita. Dependentes e vínculos podem impedir a exclusão.
+            Esta ação desativará a área. Agendamentos existentes podem impedir a exclusão.
           </p>
           {deleteError && (
             <div className="text-sm text-red-700 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-4">

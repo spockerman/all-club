@@ -1,6 +1,5 @@
 import { MembersTable } from '@/components/members/members-table'
 import { PageHeader } from '@/components/ui/page-header'
-import { PrimaryNavigateButton } from '@/components/ui/primary-navigate-button'
 import { api } from '@/lib/api'
 import type { Member } from '@all-club/shared'
 
@@ -20,11 +19,7 @@ export default async function MembersPage() {
 
   return (
     <div>
-      <PageHeader
-        title="Sócios"
-        subtitle={`Total cadastrados: ${members.length}`}
-        action={<PrimaryNavigateButton href="/members/new">+ Novo Sócio</PrimaryNavigateButton>}
-      />
+      <PageHeader title="Sócios" subtitle={`Total cadastrados: ${members.length}`} />
       <MembersTable members={members} titulares={titulares} />
     </div>
   )

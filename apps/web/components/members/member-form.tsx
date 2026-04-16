@@ -58,9 +58,13 @@ export function MemberForm({ mode, member, titulares, onSuccess, onCancel, submi
           category,
           ...(category !== 'TITULAR' && holderId ? { holderId } : {}),
         }
-        const created = await api.post<Member>('/members', body)
-        router.push(`/members/${created.id}`)
+        await api.post<Member>('/members', body)
         router.refresh()
+        if (onSuccess) {
+          onSuccess()
+        } else {
+          router.push('/members')
+        }
       } else if (member) {
         const body = {
           name: name.trim(),

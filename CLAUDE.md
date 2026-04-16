@@ -222,11 +222,93 @@ import { DetailCard, DetailField } from '@/components/ui/detail-card'
 
 `DetailField.value` accepts `ReactNode`, so badges, links, and formatted values all work.
 
+### CRUD pattern — standard for all admin screens
+
+All create/edit/delete interactions happen via modals, without page navigation. This is the enforced pattern for every CRUD in the system.
+
+**The table Client Component owns all modal state:**
+
+```tsx
+// components/{feature}/{feature}s-table.tsx  ('use client')
+const [showNew, setShowNew]       = useState(false)
+const [editTarget, setEditTarget] = useState<Item | null>(null)
+const [deleteTarget, ...]         = useState<Item | null>(null)
+
+// Single click → edit modal
+// Double click → delete confirmation modal (250 ms timer)
+```
+
+**New record button lives inside the table component, not in PageHeader:**
+
+```tsx
+<div className="flex justify-end mb-4">
+  <button onClick={() => setShowNew(true)} className={primaryButtonClassName}>
+    + Novo …
+  </button>
+</div>
+```
+
+**All three modals follow the same shape:**
+
+```tsx
+// Create
+{showNew && (
+  <Modal title="Novo …" size="md" scrollable onClose={() => setShowNew(false)}>
+    <FeatureForm mode="create" onSuccess={() => setShowNew(false)} submitLabel="Cadastrar" hideCancel />
+  </Modal>
+)}
+
+// Edit (single click)
+{editTarget && (
+  <Modal title="Editar …" size="md" scrollable onClose={() => setEditTarget(null)}>
+    <FeatureForm mode="edit" item={editTarget} onSuccess={() => setEditTarget(null)} submitLabel="Salvar" hideCancel />
+  </Modal>
+)}
+
+// Delete (double click)
+{deleteTarget && (
+  <Modal title="Excluir …" size="sm" onClose={() => { if (!deleteLoading) setDeleteTarget(null) }}>
+    {/* confirmation + Cancelar / Excluir buttons */}
+  </Modal>
+)}
+```
+
+**Form component props (standard interface for every domain form):**
+
+```tsx
+type Props = {
+  mode: 'create' | 'edit'
+  item?: DomainType          // required when mode === 'edit'
+  onSuccess?: () => void     // when provided: close modal + router.refresh(); else: router.push to detail
+  onCancel?: () => void      // when provided: close modal; else: router.back()
+  submitLabel?: string       // overrides default label ("Cadastrar" / "Salvar alterações")
+  hideCancel?: boolean       // hides cancel button and centers submit (used in modals)
+}
+```
+
+**Page Server Component stays thin — title + data fetch only:**
+
+```tsx
+// app/(admin)/{feature}/page.tsx  (Server Component)
+export default async function FeaturePage() {
+  const items = await api.get('/feature').catch(() => [])
+  return (
+    <div>
+      <PageHeader title="…" subtitle={`Total: ${items.length}`} />
+      <FeatureTable items={items} />   {/* no action= prop */}
+    </div>
+  )
+}
+```
+
+**`/new` and `/[id]/edit` pages still exist** for direct URL access, but the primary flow is modal-based.
+
 ### Adding a new domain (feature)
 
-1. Create `app/(admin)/{feature}/page.tsx` — Server Component, use `PageHeader`
-2. Create `app/(admin)/{feature}/[id]/page.tsx` — Server Component, use `Breadcrumb` + `DetailCard`
-3. Create `app/(admin)/{feature}/new/page.tsx` and `[id]/edit/page.tsx` — use `Breadcrumb`
-4. Create `components/{feature}/` for domain-specific Client Components (forms, interactive tables)
-5. Create `lib/{feature}-labels.ts` with `*_LABEL` and `*_STATUS_VARIANT` maps if the domain has status enums
-6. Register the route in `AdminAppShell` sidebar navigation
+1. Create `app/(admin)/{feature}/page.tsx` — Server Component, `PageHeader` without `action`
+2. Create `app/(admin)/{feature}/[id]/page.tsx` — Server Component, `Breadcrumb` + `DetailCard` + Editar button
+3. Create `app/(admin)/{feature}/new/page.tsx` and `[id]/edit/page.tsx` — `Breadcrumb` + form (fallback for direct URL access)
+4. Create `components/{feature}/{feature}-form.tsx` — Client Component following the standard Props interface above
+5. Create `components/{feature}/{feature}s-table.tsx` — Client Component owning all modal state + new/edit/delete flow
+6. Create `lib/{feature}-labels.ts` with `*_LABEL` and `*_STATUS_VARIANT` maps if the domain has status enums
+7. Register the route in `AdminAppShell` sidebar navigation
