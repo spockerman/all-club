@@ -6,6 +6,12 @@ const SIZE_CLASS = {
   sm: 'max-w-sm',
   md: 'max-w-lg',
   lg: 'max-w-xl',
+  xl: 'max-w-2xl',
+}
+
+const BG_CLASS = {
+  white: 'bg-white',
+  surface: 'bg-background',
 }
 
 type Props = {
@@ -13,11 +19,12 @@ type Props = {
   onClose: () => void
   children: ReactNode
   size?: keyof typeof SIZE_CLASS
-  /** Whether clicking the backdrop closes the modal. Defaults to true. */
   scrollable?: boolean
+  /** Background color of the modal panel. Defaults to 'white'. */
+  background?: keyof typeof BG_CLASS
 }
 
-export function Modal({ title, onClose, children, size = 'md', scrollable = false }: Props) {
+export function Modal({ title, onClose, children, size = 'md', scrollable = false, background = 'white' }: Props) {
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/40"
@@ -26,7 +33,7 @@ export function Modal({ title, onClose, children, size = 'md', scrollable = fals
       }}
     >
       <div
-        className={`bg-white rounded-2xl shadow-xl w-full ${SIZE_CLASS[size]} mx-4 p-6 ${
+        className={`${BG_CLASS[background]} rounded-2xl shadow-xl w-full ${SIZE_CLASS[size]} mx-4 p-6 ${
           scrollable ? 'max-h-[90vh] overflow-y-auto' : ''
         }`}
       >

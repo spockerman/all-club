@@ -26,7 +26,7 @@ export default async function BookingsPage() {
   ])
 
   const memberOptions = members.map((m) => ({ id: m.id, name: m.name }))
-  const areaOptions = areas.map((a) => ({ id: a.id, name: a.name }))
+  const areaOptions = areas.map((a) => ({ id: a.id, name: a.name, description: a.description }))
 
   return (
     <div>

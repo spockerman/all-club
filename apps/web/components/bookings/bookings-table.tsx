@@ -37,7 +37,7 @@ type Reservation = {
 }
 
 type MemberOption = { id: string; name: string }
-type AreaOption = { id: string; name: string }
+type AreaOption = { id: string; name: string; description?: string | null }
 
 type Props = {
   reservations: Reservation[]
@@ -136,7 +136,7 @@ export function BookingsTable({ reservations, members, areas }: Props) {
 
       {/* Modal: novo agendamento */}
       {showNew && (
-        <Modal title="Novo agendamento" size="md" scrollable onClose={() => setShowNew(false)}>
+        <Modal title="Novo agendamento" size="xl" scrollable onClose={() => setShowNew(false)}>
           <BookingForm
             members={members}
             areas={areas}
