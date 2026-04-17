@@ -1,21 +1,24 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { createScheduleConfigSchema, updateScheduleConfigSchema } from '@all-club/shared'
+import { authenticate } from '../../common/hooks/authenticate.hook.js'
+import { requirePermission } from '../../common/hooks/require-permission.hook.js'
 import { ScheduleConfigsService } from './schedule-configs.service.js'
 import { runSchedule } from './schedule-runner.js'
 
 export const scheduleConfigsRoutes: FastifyPluginAsync = async (app) => {
   const svc = new ScheduleConfigsService(app.prisma)
+  app.addHook('preHandler', authenticate)
 
-  app.get('/', async () => svc.findMany())
+  app.get('/', { preHandler: [requirePermission('schedule-config:manage')] }, async () => svc.findMany())
 
-  app.get('/:id', async (req, reply) => {
+  app.get('/:id', { preHandler: [requirePermission('schedule-config:manage')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const config = await svc.findById(id)
     if (!config) return reply.status(404).send({ message: 'Schedule config not found' })
     return config
   })
 
-  app.post('/', async (req, reply) => {
+  app.post('/', { preHandler: [requirePermission('schedule-config:manage')] }, async (req, reply) => {
     const data = createScheduleConfigSchema.parse(req.body)
     const config = await svc.create(data)
     // Register the new cron job
@@ -23,7 +26,7 @@ export const scheduleConfigsRoutes: FastifyPluginAsync = async (app) => {
     return reply.status(201).send(config)
   })
 
-  app.patch('/:id', async (req, reply) => {
+  app.patch('/:id', { preHandler: [requirePermission('schedule-config:manage')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const data = updateScheduleConfigSchema.parse(req.body)
     const config = await svc.update(id, data)
@@ -33,7 +36,7 @@ export const scheduleConfigsRoutes: FastifyPluginAsync = async (app) => {
     return config
   })
 
-  app.delete('/:id', async (req, reply) => {
+  app.delete('/:id', { preHandler: [requirePermission('schedule-config:manage')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     try {
       app.scheduler.unregister(id)
@@ -45,7 +48,7 @@ export const scheduleConfigsRoutes: FastifyPluginAsync = async (app) => {
   })
 
   // Toggle active without a full update
-  app.patch('/:id/toggle', async (req, reply) => {
+  app.patch('/:id/toggle', { preHandler: [requirePermission('schedule-config:manage')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     try {
       const config = await svc.toggleActive(id)
@@ -57,7 +60,7 @@ export const scheduleConfigsRoutes: FastifyPluginAsync = async (app) => {
   })
 
   // Manual trigger
-  app.post('/:id/run', async (req, reply) => {
+  app.post('/:id/run', { preHandler: [requirePermission('schedule-config:manage')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const exists = await svc.findById(id)
     if (!exists) return reply.status(404).send({ message: 'Schedule config not found' })

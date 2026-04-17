@@ -1,26 +1,26 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { createAgendaSchema, createAgendaBatchSchema, updateAgendaSchema } from '@all-club/shared'
+import { authenticate } from '../../common/hooks/authenticate.hook.js'
+import { requirePermission } from '../../common/hooks/require-permission.hook.js'
 import { AgendasService } from './agendas.service.js'
 
 export const agendasRoutes: FastifyPluginAsync = async (app) => {
   const svc = new AgendasService(app.prisma)
+  app.addHook('preHandler', authenticate)
 
-  // List agendas — ?areaId=&dateFrom=&dateTo=&status=&period=
-  app.get('/', async (req) => {
+  app.get('/', { preHandler: [requirePermission('agenda:view')] }, async (req) => {
     const q = req.query as Record<string, string | undefined>
     return svc.findMany(q)
   })
 
-  // Get one
-  app.get('/:id', async (req, reply) => {
+  app.get('/:id', { preHandler: [requirePermission('agenda:view')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const agenda = await svc.findById(id)
     if (!agenda) return reply.status(404).send({ message: 'Agenda not found' })
     return agenda
   })
 
-  // Create individual
-  app.post('/', async (req, reply) => {
+  app.post('/', { preHandler: [requirePermission('agenda:create')] }, async (req, reply) => {
     const data = createAgendaSchema.parse(req.body)
     try {
       return reply.status(201).send(await svc.create(data))
@@ -30,14 +30,12 @@ export const agendasRoutes: FastifyPluginAsync = async (app) => {
     }
   })
 
-  // Create batch (date range)
-  app.post('/batch', async (req, reply) => {
+  app.post('/batch', { preHandler: [requirePermission('agenda:create')] }, async (req, reply) => {
     const data = createAgendaBatchSchema.parse(req.body)
     return reply.status(201).send(await svc.createBatch(data))
   })
 
-  // Update
-  app.patch('/:id', async (req, reply) => {
+  app.patch('/:id', { preHandler: [requirePermission('agenda:edit')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const data = updateAgendaSchema.parse(req.body)
     try {
@@ -49,8 +47,7 @@ export const agendasRoutes: FastifyPluginAsync = async (app) => {
     }
   })
 
-  // Delete
-  app.delete('/:id', async (req, reply) => {
+  app.delete('/:id', { preHandler: [requirePermission('agenda:delete')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     try {
       await svc.delete(id)
@@ -62,8 +59,7 @@ export const agendasRoutes: FastifyPluginAsync = async (app) => {
     }
   })
 
-  // Reserve agenda (create AgendaReservation)
-  app.post('/:id/reservations', async (req, reply) => {
+  app.post('/:id/reservations', { preHandler: [requirePermission('booking:create')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const { memberId } = req.body as { memberId?: string }
     if (!memberId) return reply.status(400).send({ message: 'memberId is required' })
@@ -76,8 +72,7 @@ export const agendasRoutes: FastifyPluginAsync = async (app) => {
     }
   })
 
-  // Cancel reservation
-  app.delete('/:id/reservations', async (req, reply) => {
+  app.delete('/:id/reservations', { preHandler: [requirePermission('booking:cancel')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     try {
       await svc.cancelReservation(id)

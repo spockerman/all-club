@@ -1,4 +1,5 @@
 export * from './types/index.js'
+export * from './schemas/auth.schema.js'
 export * from './schemas/member.schema.js'
 export * from './schemas/area.schema.js'
 export * from './schemas/booking.schema.js'

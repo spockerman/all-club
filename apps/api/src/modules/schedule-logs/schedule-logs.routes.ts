@@ -1,8 +1,11 @@
 import type { FastifyPluginAsync } from 'fastify'
+import { authenticate } from '../../common/hooks/authenticate.hook.js'
+import { requirePermission } from '../../common/hooks/require-permission.hook.js'
 
 export const scheduleLogsRoutes: FastifyPluginAsync = async (app) => {
-  // List logs — ?configId=&status=&limit=
-  app.get('/', async (req) => {
+  app.addHook('preHandler', authenticate)
+
+  app.get('/', { preHandler: [requirePermission('schedule-config:manage')] }, async (req) => {
     const q = req.query as Record<string, string | undefined>
     const limit = Math.min(parseInt(q.limit ?? '100', 10), 500)
 
@@ -19,7 +22,7 @@ export const scheduleLogsRoutes: FastifyPluginAsync = async (app) => {
     })
   })
 
-  app.get('/:id', async (req, reply) => {
+  app.get('/:id', { preHandler: [requirePermission('schedule-config:manage')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const log = await app.prisma.scheduleLog.findUnique({
       where: { id },

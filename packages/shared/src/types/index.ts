@@ -1,3 +1,46 @@
+// ── Auth domain ──────────────────────────────────────────────────────────────
+export type UserRole = 'ADMIN' | 'EMPLOYEE' | 'MEMBER'
+export type UserStatus = 'ACTIVE' | 'INACTIVE' | 'BLOCKED'
+
+export interface User {
+  id: string
+  email: string
+  name: string
+  phone?: string | null
+  role: UserRole
+  status: UserStatus
+  memberId?: string | null
+  failedLoginAttempts: number
+  lockedUntil?: Date | null
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface AccessProfile {
+  id: string
+  name: string
+  description?: string | null
+  active: boolean
+  createdAt: Date
+  updatedAt: Date
+}
+
+export interface Permission {
+  key: string
+  description: string
+  resource: string
+}
+
+export interface JwtPayload {
+  sub: string
+  name: string
+  role: UserRole
+  permissions: string[]
+  memberId?: string | null
+  iat: number
+  exp: number
+}
+
 // ── Agenda domain ────────────────────────────────────────────────────────────
 export type AgendaPeriod = 'MORNING' | 'AFTERNOON' | 'EVENING' | 'ALL_DAY'
 export type AgendaStatus = 'AVAILABLE' | 'RESERVED' | 'CANCELLED'

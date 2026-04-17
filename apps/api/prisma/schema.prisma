@@ -52,6 +52,7 @@ model Member {
 
   bookings           Booking[]
   agendaReservations AgendaReservation[]
+  user               User?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -121,6 +122,147 @@ model Booking {
   @@unique([areaId, slotId, date, status])
   @@index([memberId])
   @@index([areaId, date])
+}
+
+// ── Auth domain (English DDL) ────────────────────────────────────────────────
+
+enum UserRole {
+  ADMIN
+  EMPLOYEE
+  MEMBER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum AuditEvent {
+  LOGIN_SUCCESS
+  LOGIN_FAILURE
+  LOGOUT
+  PASSWORD_CHANGED
+  PASSWORD_RESET_REQUESTED
+  PASSWORD_RESET_COMPLETED
+  ACCOUNT_LOCKED
+  ACCOUNT_UNLOCKED
+  ACCOUNT_ACTIVATED
+  ACCOUNT_DEACTIVATED
+  TOKEN_REFRESHED
+}
+
+model User {
+  id                  String     @id @default(uuid())
+  email               String     @unique
+  name                String
+  phone               String?
+  role                UserRole
+  status              UserStatus @default(ACTIVE)
+  memberId            String?    @unique
+
+  failedLoginAttempts Int        @default(0)
+  lockedUntil         DateTime?
+
+  createdAt           DateTime   @default(now())
+  updatedAt           DateTime   @updatedAt
+
+  member        Member?             @relation(fields: [memberId], references: [id])
+  credential    UserCredential?
+  profiles      UserAccessProfile[]
+  refreshTokens RefreshToken[]
+  auditLogs     SecurityAuditLog[]
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+model UserCredential {
+  id                  String    @id @default(uuid())
+  userId              String    @unique
+  passwordHash        String
+  passwordChangedAt   DateTime  @default(now())
+  mustChangePassword  Boolean   @default(false)
+  resetToken          String?   @unique
+  resetTokenExpiresAt DateTime?
+  updatedAt           DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model AccessProfile {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  permissions AccessProfilePermission[]
+  users       UserAccessProfile[]
+}
+
+model Permission {
+  key         String @id
+  description String
+  resource    String
+
+  profiles AccessProfilePermission[]
+
+  @@index([resource])
+}
+
+model AccessProfilePermission {
+  accessProfileId String
+  permissionKey   String
+
+  accessProfile AccessProfile @relation(fields: [accessProfileId], references: [id], onDelete: Cascade)
+  permission    Permission    @relation(fields: [permissionKey], references: [key], onDelete: Cascade)
+
+  @@id([accessProfileId, permissionKey])
+}
+
+model UserAccessProfile {
+  userId          String
+  accessProfileId String
+  assignedAt      DateTime @default(now())
+
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessProfile AccessProfile @relation(fields: [accessProfileId], references: [id], onDelete: Cascade)
+
+  @@id([userId, accessProfileId])
+}
+
+model RefreshToken {
+  id        String    @id @default(uuid())
+  userId    String
+  expiresAt DateTime
+  revokedAt DateTime?
+  userAgent String?
+  ipAddress String?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+model SecurityAuditLog {
+  id        String     @id @default(uuid())
+  userId    String?
+  event     AuditEvent
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+  createdAt DateTime   @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([event])
+  @@index([createdAt])
 }
 
 // ── Agenda domain (English DDL) ───────────────────────────────────────────────

@@ -5,30 +5,29 @@ import {
   createAvailabilitySlotSchema,
   blockDateSchema,
 } from '@all-club/shared'
+import { authenticate } from '../../common/hooks/authenticate.hook.js'
+import { requirePermission } from '../../common/hooks/require-permission.hook.js'
 import { AreasService } from './areas.service.js'
 
 export const areasRoutes: FastifyPluginAsync = async (app) => {
   const svc = new AreasService(app.prisma)
+  app.addHook('preHandler', authenticate)
 
-  // List all areas
-  app.get('/', async () => svc.findMany())
+  app.get('/', { preHandler: [requirePermission('area:view')] }, async () => svc.findMany())
 
-  // Get one area with its slots
-  app.get('/:id', async (req, reply) => {
+  app.get('/:id', { preHandler: [requirePermission('area:view')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const area = await svc.findById(id)
     if (!area) return reply.status(404).send({ message: 'Área não encontrada' })
     return area
   })
 
-  // Create area
-  app.post('/', async (req, reply) => {
+  app.post('/', { preHandler: [requirePermission('area:create')] }, async (req, reply) => {
     const data = createAreaSchema.parse(req.body)
     return reply.status(201).send(await svc.create(data))
   })
 
-  // Update area
-  app.patch('/:id', async (req, reply) => {
+  app.patch('/:id', { preHandler: [requirePermission('area:edit')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const data = updateAreaSchema.parse(req.body)
     const area = await svc.update(id, data)
@@ -36,8 +35,7 @@ export const areasRoutes: FastifyPluginAsync = async (app) => {
     return area
   })
 
-  // Delete area
-  app.delete('/:id', async (req, reply) => {
+  app.delete('/:id', { preHandler: [requirePermission('area:delete')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     await svc.delete(id)
     return reply.status(204).send()
@@ -45,22 +43,19 @@ export const areasRoutes: FastifyPluginAsync = async (app) => {
 
   // --- Availability Slots ---
 
-  // Add slot to area
-  app.post('/:id/slots', async (req, reply) => {
+  app.post('/:id/slots', { preHandler: [requirePermission('area:edit')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const data = createAvailabilitySlotSchema.parse(req.body)
     return reply.status(201).send(await svc.addSlot(id, data))
   })
 
-  // Remove slot
-  app.delete('/:id/slots/:slotId', async (req, reply) => {
+  app.delete('/:id/slots/:slotId', { preHandler: [requirePermission('area:edit')] }, async (req, reply) => {
     const { slotId } = req.params as { id: string; slotId: string }
     await svc.removeSlot(slotId)
     return reply.status(204).send()
   })
 
-  // Get availability for a specific date (returns slots minus blocked + booked)
-  app.get('/:id/availability', async (req, reply) => {
+  app.get('/:id/availability', { preHandler: [requirePermission('booking:view')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const { date } = req.query as { date?: string }
     if (!date) return reply.status(400).send({ message: 'Query param "date" obrigatório (YYYY-MM-DD)' })
@@ -69,13 +64,13 @@ export const areasRoutes: FastifyPluginAsync = async (app) => {
 
   // --- Blocked Dates ---
 
-  app.post('/:id/blocked-dates', async (req, reply) => {
+  app.post('/:id/blocked-dates', { preHandler: [requirePermission('area:edit')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
     const data = blockDateSchema.parse(req.body)
     return reply.status(201).send(await svc.blockDate(id, data))
   })
 
-  app.delete('/:id/blocked-dates/:blockedId', async (req, reply) => {
+  app.delete('/:id/blocked-dates/:blockedId', { preHandler: [requirePermission('area:edit')] }, async (req, reply) => {
     const { blockedId } = req.params as { id: string; blockedId: string }
     await svc.unblockDate(blockedId)
     return reply.status(204).send()

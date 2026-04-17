@@ -2,8 +2,10 @@
 
 import { eficienciaEquipe } from '@/lib/dashboard-fake-data'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { type ReactNode } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
+import { type ReactNode, useEffect, useState } from 'react'
+
+type AuthUser = { name: string; email: string; role: string }
 
 const areasBookingsNav = [
   { href: '/areas', label: 'Áreas comuns', icon: 'holiday_village' },
@@ -21,8 +23,41 @@ function NavIcon({ name }: { name: string }) {
   )
 }
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001'
+
+function getToken(): string | undefined {
+  const match = document.cookie.match(/(?:^|;\s*)access_token=([^;]*)/)
+  return match ? decodeURIComponent(match[1]) : undefined
+}
+
 export function AdminAppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname()
+  const router = useRouter()
+  const [user, setUser] = useState<AuthUser | null>(null)
+
+  useEffect(() => {
+    const token = getToken()
+    if (!token) return
+    fetch(`${API_URL}/auth/me`, { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => { if (data) setUser({ name: data.name, email: data.email, role: data.role }) })
+      .catch(() => {})
+  }, [])
+
+  function handleLogout() {
+    const refreshToken = typeof localStorage !== 'undefined' ? localStorage.getItem('refresh_token') : null
+    const token = getToken()
+    if (token) {
+      fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ refreshToken }),
+      }).catch(() => {})
+    }
+    document.cookie = 'access_token=; path=/; max-age=0'
+    localStorage.removeItem('refresh_token')
+    router.push('/login')
+  }
 
   const linkBase =
     'flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm font-medium'
@@ -75,6 +110,21 @@ export function AdminAppShell({ children }: { children: ReactNode }) {
             )
           })}
 
+          <Link
+            href="/users"
+            className={pathname === '/users' || pathname?.startsWith('/users/') ? active : inactive}
+          >
+            <NavIcon name="manage_accounts" />
+            Usuários
+          </Link>
+          <Link
+            href="/access-profiles"
+            className={pathname === '/access-profiles' || pathname?.startsWith('/access-profiles/') ? active : inactive}
+          >
+            <NavIcon name="admin_panel_settings" />
+            Perfis de acesso
+          </Link>
+
           <Link href="#" className={inactive}>
             <NavIcon name="handshake" />
             Convênios
@@ -106,23 +156,20 @@ export function AdminAppShell({ children }: { children: ReactNode }) {
           </div>
         </nav>
 
-        <div className="pt-6 space-y-1">
-          <Link
-            href="#"
-            className="flex items-center justify-between px-4 py-2.5 text-on-surface-variant hover:bg-gray-50 rounded-lg transition-all"
-          >
-            <div className="flex items-center gap-3">
-              <NavIcon name="settings" />
-              <span className="text-sm font-medium">Configurações</span>
+        <div className="pt-6 space-y-1 border-t border-gray-100">
+          {user && (
+            <div className="px-4 py-2 mb-1">
+              <p className="text-xs font-semibold text-gray-900 truncate">{user.name}</p>
+              <p className="text-[11px] text-gray-400 truncate">{user.email}</p>
             </div>
-            <span className="material-symbols-outlined text-sm" aria-hidden>
-              expand_more
-            </span>
-          </Link>
-          <Link href="#" className={inactive}>
-            <NavIcon name="help" />
-            Ajuda e suporte
-          </Link>
+          )}
+          <button
+            onClick={handleLogout}
+            className="flex items-center gap-3 px-4 py-2.5 w-full text-left rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
+          >
+            <NavIcon name="logout" />
+            Sair
+          </button>
         </div>
       </aside>
 

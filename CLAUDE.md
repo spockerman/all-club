@@ -37,6 +37,7 @@ npm run lint          # tsc --noEmit
 npm run test          # jest
 npm run db:migrate    # prisma migrate dev
 npm run db:studio     # Open Prisma Studio GUI
+npm run db:seed       # seed permissions + default admin (admin@clube.com / Admin@123)
 ```
 
 ### Web (`apps/web`)
@@ -99,8 +100,9 @@ Entry point is `src/main.ts` — registers plugins then imports all route module
 
 ### Web — Next.js App Router
 
-- `app/(admin)/` — Protected admin route group
-- `lib/api.ts` — Fetch wrapper; reads `NEXT_PUBLIC_API_URL`
+- `app/(admin)/` — Protected admin route group; guarded by `middleware.ts`
+- `app/login/` — Public login page (client component)
+- `lib/api.ts` — Fetch wrapper; reads `NEXT_PUBLIC_API_URL`; auto-injects `Authorization` header from `access_token` cookie; methods: `get`, `post`, `put`, `patch`, `delete`
 - Minimal client components; logic stays in Server Components/pages
 
 #### Component structure (`apps/web/components/`)
@@ -116,7 +118,11 @@ components/
     status-badge.tsx        — Colored pill badge, variants: green | yellow | gray | red
   members/          — Domain components for the members feature
   dashboard/        — Domain components for the dashboard feature
-  admin/            — Shell layout (AdminAppShell)
+  agendas/          — Domain components for agendas + batch creation
+  schedule-configs/ — Domain components for schedule configs (cron jobs)
+  users/            — Domain components for user management (user-form, users-table)
+  access-profiles/  — Domain components for access profiles + permission assignment
+  admin/            — Shell layout (AdminAppShell) — includes logout + user display
 ```
 
 #### Domain label files (`apps/web/lib/`)
@@ -146,6 +152,11 @@ Auth tokens stored via `expo-secure-store`.
 - `BlockedDate` prevents bookings on closed days
 - Unique constraint on `(areaId, slotId, date)` prevents double-booking
 - Enums use Portuguese values matching club terminology (e.g., `SEGUNDA`, `TERCA` for days)
+- `Member` has optional `user User?` back-relation (one member = one user account)
+
+**Auth domain** (all DDL in English):
+
+`User` → `UserCredential` (1:1), `User` → `RefreshToken` (1:N), `User` → `UserAccessProfile` → `AccessProfile` → `AccessProfilePermission` → `Permission`
 
 **Agenda domain** (all DDL in English):
 
@@ -160,6 +171,88 @@ Auth tokens stored via `expo-secure-store`.
 - Scheduler plugin (`src/common/plugins/scheduler.plugin.ts`) loads all active configs on boot; exposes `app.scheduler.{register, unregister, reload}`
 - timezone: `America/Sao_Paulo` throughout the scheduler
 
+## Authentication & Authorization
+
+### Strategy
+
+- **JWT access token** (30-minute expiry) signed with `JWT_SECRET`; permissions array embedded for fast, DB-free authorization
+- **Refresh token** (30-day expiry): opaque UUID stored in `RefreshToken` table; enables revocation; rejected if issued before `passwordChangedAt`
+- **Cookie storage**: `access_token` cookie (non-httpOnly) readable by both Server Components (`cookies()` from `next/headers`) and Client Components (`document.cookie`)
+- **Refresh token storage**: `localStorage` (key: `refresh_token`) — client manages renewal
+
+### Roles
+
+| Role | Context | Permission check |
+|------|---------|-----------------|
+| `ADMIN` | Full system access | Bypasses all permission checks |
+| `EMPLOYEE` | Admin dashboard | Union of all active `AccessProfile` permissions resolved at login |
+| `MEMBER` | Mobile app | Fixed set: `agenda:view`, `booking:view`, `booking:create`, `booking:cancel`, `area:view` |
+
+### Fastify hooks (`apps/api/src/common/hooks/`)
+
+```typescript
+// Verify JWT — apply to all protected routes
+authenticate                      // preHandler: request.jwtVerify()
+
+// Verify permission — ADMIN always bypasses
+requirePermission('member:view')  // checks JWT payload.permissions array
+requirePermission('member:view', 'member:edit')  // OR logic — any of the listed keys
+
+// Verify role
+requireRole('ADMIN')
+requireRole('ADMIN', 'EMPLOYEE')  // OR logic
+```
+
+Apply with `preHandler` at route or plugin level:
+```typescript
+app.addHook('preHandler', authenticate)
+app.get('/path', { preHandler: [authenticate, requirePermission('resource:action')] }, handler)
+```
+
+### Permission keys (20 seeded)
+
+Format: `resource:action`. Resources: `member`, `area`, `agenda`, `booking`, `schedule-config`, `user`, `access-profile`.
+Actions: `view`, `create`, `edit`, `delete`, `deactivate`, `manage`, `cancel`.
+
+### API modules
+
+| Module | Prefix | Key endpoints |
+|--------|--------|---------------|
+| `auth` | `/auth` | POST /login, POST /logout, POST /refresh, GET /me, PATCH /me, PATCH /me/password, POST /forgot-password, POST /reset-password |
+| `users` | `/users` | GET, GET /:id, POST /internal, POST /member, PATCH /:id/activate\|deactivate\|block\|unblock, PUT /:id/profiles |
+| `access-profiles` | `/access-profiles` | CRUD + PUT /:id/permissions + PATCH /:id/toggle |
+| `permissions` | `/permissions` | GET (ADMIN only) |
+
+### Database models (auth domain)
+
+- `User`: role (ADMIN/EMPLOYEE/MEMBER), status (ACTIVE/INACTIVE/BLOCKED), failedLoginAttempts, lockedUntil, optional memberId FK
+- `UserCredential`: passwordHash (bcryptjs cost=12), passwordChangedAt, mustChangePassword, resetToken
+- `AccessProfile` ↔ `Permission` via `AccessProfilePermission`
+- `User` ↔ `AccessProfile` via `UserAccessProfile`
+- `RefreshToken`: opaque UUID, revokedAt, expiresAt
+- `SecurityAuditLog`: 11 event types (LOGIN_SUCCESS, LOGIN_FAILURE, LOGOUT, PASSWORD_CHANGED, etc.)
+
+### Security details
+
+- **Timing attack protection**: `DUMMY_HASH` initialized at startup via `initDummyHash()`; always runs `bcrypt.compare` even when user not found
+- **Account locking**: 5 failed attempts → BLOCKED status + `lockedUntil = now + 30min`
+- **Password policy**: min 8 chars, at least one uppercase, lowercase, and digit (`PASSWORD_POLICY` regex in `packages/shared`)
+- **bcryptjs** (pure JS, ESM-compatible) with cost factor 12 — never use `bcrypt` native binding
+
+### Seed & default credentials
+
+```bash
+npm run db:seed   # (from apps/api) — seeds 20 permissions + default admin
+```
+
+Default admin: `admin@clube.com` / `Admin@123` — `mustChangePassword = true` on first login.
+
+### Web auth flow
+
+- `apps/web/middleware.ts` — redirects unauthenticated requests to `/login?redirect=...`; public paths: `/login`, `/change-password`
+- `apps/web/app/login/page.tsx` — client component; sets `access_token` cookie on success; redirects to `/change-password` if `mustChangePassword`
+- `lib/api.ts` `apiFetch()` — automatically reads and injects `Authorization: Bearer` header in both SSR and CSR contexts
+
 ## Code Conventions
 
 **Formatting (Prettier):** no semicolons, single quotes, trailing commas, 100-char line width.
@@ -170,7 +263,7 @@ Auth tokens stored via `expo-secure-store`.
 
 **Validation:** All API inputs validated with Zod `.parse()`. Schemas live in `packages/shared`.
 
-**Auth:** `@fastify/jwt` is registered but route-level guards are not yet enforced — this is a known gap to address when implementing protected endpoints.
+**Auth:** All routes are protected. Use `authenticate` + `requirePermission`/`requireRole` hooks. ADMIN bypasses all permission checks.
 
 ## Web UI Patterns
 
