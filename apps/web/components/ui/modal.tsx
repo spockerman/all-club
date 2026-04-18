@@ -6,7 +6,7 @@ const SIZE_CLASS = {
   sm: 'max-w-sm',
   md: 'max-w-lg',
   lg: 'max-w-xl',
-  xl: 'max-w-2xl',
+  xl: 'max-w-[75rem]',
 }
 
 const BG_CLASS = {

@@ -348,6 +348,14 @@ model ScheduleConfig {
   @@index([areaId])
 }
 
+// ── Club settings (key/value store) ─────────────────────────────────────────
+
+model ClubSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
 model ScheduleLog {
   id               String            @id @default(uuid())
   scheduleConfigId String

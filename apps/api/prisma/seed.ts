@@ -33,7 +33,17 @@ const PERMISSIONS = [
   { key: 'profile:view',             description: 'Visualizar perfis de acesso',     resource: 'access-profile' },
 ]
 
+const DEFAULT_SETTINGS = [
+  { key: 'clubName',   value: 'Centro Avareense' },
+  { key: 'logoUrl',    value: '/images/logo_centro.png' },
+]
+
 async function main() {
+  console.log('Seeding club settings…')
+  for (const s of DEFAULT_SETTINGS) {
+    await prisma.clubSetting.upsert({ where: { key: s.key }, update: {}, create: s })
+  }
+  console.log(`${DEFAULT_SETTINGS.length} settings upserted.`)
   console.log('Seeding permissions…')
   for (const p of PERMISSIONS) {
     await prisma.permission.upsert({ where: { key: p.key }, update: {}, create: p })

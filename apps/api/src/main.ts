@@ -13,6 +13,7 @@ import { authRoutes } from './modules/auth/auth.routes.js'
 import { usersRoutes } from './modules/users/users.routes.js'
 import { accessProfilesRoutes } from './modules/access-profiles/access-profiles.routes.js'
 import { permissionsRoutes } from './modules/permissions/permissions.routes.js'
+import { settingsRoutes } from './modules/settings/settings.routes.js'
 import { prismaPlugin } from './common/plugins/prisma.plugin.js'
 import { schedulerPlugin } from './common/plugins/scheduler.plugin.js'
 import { initDummyHash } from './common/utils/password.utils.js'
@@ -55,6 +56,7 @@ await app.register(scheduleLogsRoutes, { prefix: '/schedule-logs' })
 await app.register(usersRoutes, { prefix: '/users' })
 await app.register(accessProfilesRoutes, { prefix: '/access-profiles' })
 await app.register(permissionsRoutes, { prefix: '/permissions' })
+await app.register(settingsRoutes, { prefix: '/settings' })
 
 // Health check (public)
 app.get('/health', async () => ({ status: 'ok' }))
