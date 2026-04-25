@@ -5,6 +5,7 @@ import type {
   ForgotPasswordInput,
   JwtPayload,
   LoginInput,
+  RegisterMemberInput,
   ResetPasswordInput,
   UpdateUserInput,
 } from '@all-club/shared'
@@ -20,6 +21,7 @@ import {
   refreshTokenExpiresAt,
   resetTokenExpiresAt,
 } from '../../common/utils/token.utils.js'
+import { buildActivationEmail } from '../../common/plugins/mailer.plugin.js'
 
 const MEMBER_PERMISSIONS = ['agenda:view', 'booking:view', 'booking:create', 'booking:cancel', 'area:view']
 const MAX_FAILED_ATTEMPTS = 5
@@ -179,6 +181,7 @@ export class AuthService {
         name: user.name,
         email: user.email,
         role: user.role,
+        memberId: user.memberId ?? null,
         permissions,
         mustChangePassword: user.credential?.mustChangePassword ?? false,
       },
@@ -325,6 +328,70 @@ export class AuthService {
     })
   }
 
+  async registerMember(data: RegisterMemberInput) {
+    const member = await this.prisma.member.findUnique({
+      where: { email: data.email },
+      include: { holder: true, user: true },
+    })
+
+    // Generic response — never reveal whether email/number was found
+    if (!member) return
+
+    // Resolve the membership number: TITULAR owns it, DEPENDENTE inherits from holder
+    const resolvedNumber = member.membershipNumber ?? member.holder?.membershipNumber ?? null
+    if (!resolvedNumber || resolvedNumber !== data.membershipNumber) return
+
+    // Account already exists
+    if (member.user) return
+
+    // Find the "Associado" access profile
+    const associateProfile = await this.prisma.accessProfile.findUnique({
+      where: { name: 'Associado' },
+    })
+
+    const resetToken = generateResetToken()
+    const scheme = process.env.APP_SCHEME ?? 'all-club'
+
+    await this.prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          name: member.name,
+          email: member.email,
+          phone: member.phone,
+          role: 'MEMBER',
+          status: 'ACTIVE',
+          memberId: member.id,
+        },
+      })
+
+      await tx.userCredential.create({
+        data: {
+          userId: user.id,
+          passwordHash: '',
+          mustChangePassword: true,
+          resetToken,
+          resetTokenExpiresAt: resetTokenExpiresAt(),
+        },
+      })
+
+      if (associateProfile) {
+        await tx.userAccessProfile.create({
+          data: { userId: user.id, accessProfileId: associateProfile.id },
+        })
+      }
+
+      const { html, text } = buildActivationEmail({ name: member.name, token: resetToken, scheme })
+
+      await this.app.mailer.sendMail({
+        from: process.env.MAILTRAP_FROM ?? 'All Club <noreply@allclub.com>',
+        to: member.email,
+        subject: 'Bem-vindo ao All Club — Crie sua senha',
+        html,
+        text,
+      })
+    })
+  }
+
   async forgotPassword(
     data: ForgotPasswordInput,
     meta: { ipAddress?: string; userAgent?: string },
@@ -346,9 +413,16 @@ export class AuthService {
       data: { event: 'PASSWORD_RESET_REQUESTED', userId: user.id, ...meta },
     })
 
-    // TODO: send email with reset link
-    // In production: send email with link containing resetToken
-    console.log(`[AUTH] Password reset token for ${user.email}: ${resetToken}`)
+    const scheme = process.env.APP_SCHEME ?? 'all-club'
+    const { html, text } = buildActivationEmail({ name: user.name, token: resetToken, scheme })
+
+    await this.app.mailer.sendMail({
+      from: process.env.MAILTRAP_FROM ?? 'All Club <noreply@allclub.com>',
+      to: user.email,
+      subject: 'All Club — Redefinição de senha',
+      html,
+      text,
+    })
   }
 
   async resetPassword(

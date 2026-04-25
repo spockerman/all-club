@@ -1,7 +1,7 @@
 'use client'
 
 import { api } from '@/lib/api'
-import { getAreaIconComponent } from '@/components/icons/area-icons'
+import { getAreaIconName } from '@/components/icons/area-icons'
 import type { AgendaPeriod } from '@all-club/shared'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
@@ -223,7 +223,7 @@ export function BookingForm({ members, areas, onSuccess, onCancel, hideCancel }:
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {filteredAreas.map((area) => {
             const isSelected = area.id === selectedAreaId
-            const AreaIcon = getAreaIconComponent(area.name)
+            const iconName = getAreaIconName(area.name)
             return (
               <button
                 key={area.id}
@@ -247,7 +247,7 @@ export function BookingForm({ members, areas, onSuccess, onCancel, hideCancel }:
                       : 'bg-surface-container text-on-surface-variant group-hover:bg-gray-100'
                   }`}
                 >
-                  <AreaIcon className="w-5 h-5" />
+                  <span className="material-symbols-outlined text-[22px]">{iconName}</span>
                 </div>
                 <div>
                   <p className="font-bold text-on-surface text-sm leading-tight">{area.name}</p>
@@ -369,32 +369,31 @@ export function BookingForm({ members, areas, onSuccess, onCancel, hideCancel }:
         </section>
 
         {/* Right: Area visual panel */}
-        <div className="rounded-xl overflow-hidden bg-gray-900 aspect-[4/3] relative flex items-end">
+        <div className="rounded-xl bg-surface-container aspect-[4/3] flex flex-col items-center justify-center gap-3">
           {selectedArea ? (
             <>
-              {/* Large area icon centered */}
-              <div className="absolute inset-0 flex items-center justify-center">
-                {(() => {
-                  const AreaIcon = getAreaIconComponent(selectedArea.name)
-                  return <AreaIcon className="w-20 h-20 text-white/10" />
-                })()}
-              </div>
-              {/* Gradient overlay + info */}
-              <div className="relative w-full bg-gradient-to-t from-black/70 to-transparent px-4 py-4">
-                <p className="text-[10px] text-white/50 uppercase tracking-widest font-semibold mb-0.5">
+              <span className="material-symbols-outlined text-[64px] text-on-surface-variant">
+                {getAreaIconName(selectedArea.name)}
+              </span>
+              <div className="text-center px-4">
+                <p className="text-[10px] text-on-surface-variant uppercase tracking-widest font-semibold mb-0.5">
                   Local selecionado
                 </p>
-                <p className="text-sm font-bold text-white leading-tight">{selectedArea.name}</p>
+                <p className="text-sm font-bold text-on-surface leading-tight">{selectedArea.name}</p>
                 {selectedArea.description && (
-                  <p className="text-xs text-white/60 mt-0.5">{selectedArea.description}</p>
+                  <p className="text-xs text-on-surface-variant mt-1">{selectedArea.description}</p>
                 )}
               </div>
             </>
           ) : (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-white/20">
-              <span className="material-symbols-outlined text-[48px]">location_on</span>
-              <p className="text-xs font-semibold uppercase tracking-widest">Selecione uma área</p>
-            </div>
+            <>
+              <span className="material-symbols-outlined text-[48px] text-on-surface-variant/30">
+                location_on
+              </span>
+              <p className="text-xs font-semibold uppercase tracking-widest text-on-surface-variant/40">
+                Selecione uma área
+              </p>
+            </>
           )}
         </div>
       </div>

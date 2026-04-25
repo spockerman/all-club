@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
@@ -14,8 +15,10 @@ import { usersRoutes } from './modules/users/users.routes.js'
 import { accessProfilesRoutes } from './modules/access-profiles/access-profiles.routes.js'
 import { permissionsRoutes } from './modules/permissions/permissions.routes.js'
 import { settingsRoutes } from './modules/settings/settings.routes.js'
+import { marketingRoutes } from './modules/marketing/marketing.routes.js'
 import { prismaPlugin } from './common/plugins/prisma.plugin.js'
 import { schedulerPlugin } from './common/plugins/scheduler.plugin.js'
+import { mailerPlugin } from './common/plugins/mailer.plugin.js'
 import { initDummyHash } from './common/utils/password.utils.js'
 
 const app = Fastify({ logger: true })
@@ -41,6 +44,7 @@ await app.register(swagger, {
 })
 await app.register(swaggerUi, { routePrefix: '/docs' })
 await app.register(prismaPlugin)
+await app.register(mailerPlugin)
 await app.register(schedulerPlugin)
 
 // Public routes
@@ -57,6 +61,7 @@ await app.register(usersRoutes, { prefix: '/users' })
 await app.register(accessProfilesRoutes, { prefix: '/access-profiles' })
 await app.register(permissionsRoutes, { prefix: '/permissions' })
 await app.register(settingsRoutes, { prefix: '/settings' })
+await app.register(marketingRoutes, { prefix: '/marketing' })
 
 // Health check (public)
 app.get('/health', async () => ({ status: 'ok' }))

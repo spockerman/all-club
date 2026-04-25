@@ -1,82 +1,153 @@
-import { useEffect, useState } from 'react'
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native'
+import { useEffect, useState, useCallback, useMemo } from 'react'
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { PRIMARY_BUTTON_BG } from '@/constants/theme'
-import { api } from '@/lib/api'
-import type { Area } from '@all-club/shared'
-
-interface AreaWithSlots extends Area {
-  availabilitySlots: { id: string; dayOfWeek: string; startTime: string; endTime: string }[]
-}
+import { api, ApiError } from '@/lib/api'
+import { useAuth } from '@/lib/auth'
+import { AreaCard, type AreaSummary } from '@/components/areas/AreaCard'
 
 export default function AreasScreen() {
-  const [areas, setAreas] = useState<AreaWithSlots[]>([])
+  const [areas, setAreas] = useState<AreaSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<'auth' | 'network' | null>(null)
+  const [query, setQuery] = useState('')
   const router = useRouter()
+  const { logout } = useAuth()
 
-  useEffect(() => {
-    api.get<AreaWithSlots[]>('/areas')
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase()
+    if (!q) return areas
+    return areas.filter((a) => a.name.toLowerCase().includes(q))
+  }, [areas, query])
+
+  const load = useCallback(() => {
+    setLoading(true)
+    setError(null)
+    api.get<AreaSummary[]>('/areas')
       .then(setAreas)
-      .catch(console.error)
+      .catch((e) => setError(e instanceof ApiError && e.status === 401 ? 'auth' : 'network'))
       .finally(() => setLoading(false))
   }, [])
 
-  if (loading) {
-    return (
-      <View style={styles.center}>
-        <ActivityIndicator color={PRIMARY_BUTTON_BG} />
-      </View>
-    )
-  }
+  useEffect(() => { load() }, [load])
 
   return (
-    <SafeAreaView style={styles.container}>
-      <Text style={styles.title}>Áreas Comuns</Text>
-      <FlatList
-        data={areas}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={styles.list}
-        renderItem={({ item }) => (
-          <TouchableOpacity
-            style={styles.card}
-            onPress={() => router.push({ pathname: '/bookings/new', params: { areaId: item.id, areaName: item.name } })}
-          >
-            <Text style={styles.cardTitle}>{item.name}</Text>
-            {item.description && <Text style={styles.cardDesc} numberOfLines={2}>{item.description}</Text>}
-            <View style={styles.meta}>
-              <Text style={styles.metaText}>Cap.: {item.capacity} pessoas</Text>
-              <Text style={styles.metaText}>{item.availabilitySlots.length} horários</Text>
-            </View>
-            <Text style={styles.action}>Agendar →</Text>
+    <SafeAreaView style={s.root} edges={['top']}>
+      <View style={s.header}>
+        <Text style={s.headerTitle}>Áreas Comuns</Text>
+        <TouchableOpacity
+          style={s.notifBtn}
+          onPress={() => router.push('/(tabs)/profile')}
+        >
+          <Ionicons name="notifications-outline" size={22} color="#374151" />
+        </TouchableOpacity>
+      </View>
+
+      <View style={s.searchWrap}>
+        <Ionicons name="search-outline" size={16} color="#9CA3AF" style={s.searchIcon} />
+        <TextInput
+          style={s.searchInput}
+          placeholder="Buscar área..."
+          placeholderTextColor="#9CA3AF"
+          value={query}
+          onChangeText={setQuery}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+      </View>
+
+      {loading ? (
+        <View style={s.center}>
+          <ActivityIndicator color="#111827" />
+        </View>
+      ) : error === 'auth' ? (
+        <View style={s.center}>
+          <Ionicons name="lock-closed-outline" size={36} color="#D1D5DB" />
+          <Text style={s.message}>Sessão expirada</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={async () => { await logout(); router.replace('/login') }}>
+            <Text style={s.retryText}>Fazer login novamente</Text>
           </TouchableOpacity>
-        )}
-        ListEmptyComponent={
-          <Text style={styles.empty}>Nenhuma área disponível</Text>
-        }
-      />
+        </View>
+      ) : error === 'network' ? (
+        <View style={s.center}>
+          <Ionicons name="cloud-offline-outline" size={36} color="#D1D5DB" />
+          <Text style={s.message}>Não foi possível carregar as áreas</Text>
+          <TouchableOpacity style={s.retryBtn} onPress={load}>
+            <Text style={s.retryText}>Tentar novamente</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          data={filtered}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={s.list}
+          showsVerticalScrollIndicator={false}
+          renderItem={({ item }) => (
+            <AreaCard item={item} onPress={(id) => router.push(`/areas/${id}` as never)} />
+          )}
+          ListEmptyComponent={
+            <View style={s.center}>
+              <Text style={s.message}>
+                {query.trim() ? 'Nenhuma área encontrada' : 'Nenhuma área cadastrada'}
+              </Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   )
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f8fafc' },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 22, fontWeight: '700', color: '#1e293b', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 8 },
-  list: { padding: 20, gap: 12 },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 16,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+const s = StyleSheet.create({
+  root: { flex: 1, backgroundColor: '#FFFFFF' },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10 },
+
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
   },
-  cardTitle: { fontSize: 16, fontWeight: '600', color: '#1e293b' },
-  cardDesc: { fontSize: 13, color: '#64748b', marginTop: 4 },
-  meta: { flexDirection: 'row', gap: 16, marginTop: 10 },
-  metaText: { fontSize: 12, color: '#94a3b8' },
-  action: { marginTop: 10, fontSize: 13, fontWeight: '600', color: PRIMARY_BUTTON_BG },
-  empty: { textAlign: 'center', color: '#94a3b8', marginTop: 40 },
+  headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827', letterSpacing: -0.3 },
+  notifBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    height: 40,
+  },
+  searchIcon: { marginRight: 6 },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: '#111827',
+  },
+
+  list: { padding: 16, gap: 10, paddingBottom: 32 },
+  message: { fontSize: 14, color: '#9CA3AF' },
+  retryBtn: {
+    marginTop: 4,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#111827',
+    borderRadius: 8,
+  },
+  retryText: { fontSize: 13, fontWeight: '600', color: '#FFFFFF' },
 })

@@ -4,7 +4,6 @@ generator client {
 
 datasource db {
   provider = "postgresql"
-  url      = env("DATABASE_URL")
 }
 
 enum MemberCategory {
@@ -37,13 +36,14 @@ enum DayOfWeek {
 }
 
 model Member {
-  id        String         @id @default(uuid())
-  name      String
-  email     String         @unique
-  phone     String?
-  photoUrl  String?
-  category  MemberCategory @default(TITULAR)
-  status    MemberStatus   @default(PENDENTE)
+  id               String         @id @default(uuid())
+  name             String
+  email            String         @unique
+  phone            String?
+  photoUrl         String?
+  membershipNumber String?        @unique
+  category         MemberCategory @default(TITULAR)
+  status           MemberStatus   @default(PENDENTE)
 
   // Auto-relação: titular → dependentes
   holderId    String?
@@ -346,6 +346,26 @@ model ScheduleConfig {
   updatedAt DateTime @updatedAt
 
   @@index([areaId])
+}
+
+// ── Marketing domain (English DDL) ───────────────────────────────────────────
+
+enum MarketingMediaType {
+  NOTICE
+  MEDIA
+}
+
+model MarketingMedia {
+  id        String             @id @default(uuid())
+  title     String
+  type      MarketingMediaType
+  imageUrl  String             @db.Text
+  active    Boolean            @default(true)
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+
+  @@index([type])
+  @@index([active])
 }
 
 // ── Club settings (key/value store) ─────────────────────────────────────────

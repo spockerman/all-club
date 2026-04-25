@@ -1,7 +1,10 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
+import 'dotenv/config'
 
-const prisma = new PrismaClient()
+const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! })
+const prisma = new PrismaClient({ adapter })
 
 const PERMISSIONS = [
   // member
@@ -49,6 +52,22 @@ async function main() {
     await prisma.permission.upsert({ where: { key: p.key }, update: {}, create: p })
   }
   console.log(`${PERMISSIONS.length} permissions upserted.`)
+
+  // AccessProfile "Associado"
+  const ASSOCIATE_PERMISSIONS = ['agenda:view', 'booking:view', 'booking:create', 'booking:cancel', 'area:view']
+  const associateProfile = await prisma.accessProfile.upsert({
+    where: { name: 'Associado' },
+    update: {},
+    create: { name: 'Associado', description: 'Perfil padrão para associados — acesso ao app mobile' },
+  })
+  for (const key of ASSOCIATE_PERMISSIONS) {
+    await prisma.accessProfilePermission.upsert({
+      where: { accessProfileId_permissionKey: { accessProfileId: associateProfile.id, permissionKey: key } },
+      update: {},
+      create: { accessProfileId: associateProfile.id, permissionKey: key },
+    })
+  }
+  console.log(`AccessProfile "Associado" upserted with ${ASSOCIATE_PERMISSIONS.length} permissions.`)
 
   // Default admin user (only if no admin exists)
   const adminExists = await prisma.user.findFirst({ where: { role: 'ADMIN' } })

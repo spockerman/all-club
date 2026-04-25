@@ -1,5 +1,6 @@
 import type { FastifyPluginAsync } from 'fastify'
 import { createAgendaSchema, createAgendaBatchSchema, updateAgendaSchema } from '@all-club/shared'
+import type { JwtPayload } from '@all-club/shared'
 import { authenticate } from '../../common/hooks/authenticate.hook.js'
 import { requirePermission } from '../../common/hooks/require-permission.hook.js'
 import { AgendasService } from './agendas.service.js'
@@ -61,8 +62,8 @@ export const agendasRoutes: FastifyPluginAsync = async (app) => {
 
   app.post('/:id/reservations', { preHandler: [requirePermission('booking:create')] }, async (req, reply) => {
     const { id } = req.params as { id: string }
-    const { memberId } = req.body as { memberId?: string }
-    if (!memberId) return reply.status(400).send({ message: 'memberId is required' })
+    const { memberId } = req.user as JwtPayload
+    if (!memberId) return reply.status(400).send({ message: 'User is not linked to a member account' })
     try {
       return reply.status(201).send(await svc.reserve(id, memberId))
     } catch (err) {

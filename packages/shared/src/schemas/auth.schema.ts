@@ -66,6 +66,11 @@ export const assignProfilesSchema = z.object({
   profileIds: z.array(z.string().uuid()),
 })
 
+export const registerMemberSchema = z.object({
+  email: z.string().email(),
+  membershipNumber: z.string().min(1).max(20),
+})
+
 export type LoginInput = z.infer<typeof loginSchema>
 export type ChangePasswordInput = z.infer<typeof changePasswordSchema>
 export type ForgotPasswordInput = z.infer<typeof forgotPasswordSchema>
@@ -75,3 +80,4 @@ export type CreateMemberUserInput = z.infer<typeof createMemberUserSchema>
 export type UpdateUserInput = z.infer<typeof updateUserSchema>
 export type CreateAccessProfileInput = z.infer<typeof createAccessProfileSchema>
 export type UpdateAccessProfileInput = z.infer<typeof updateAccessProfileSchema>
+export type RegisterMemberInput = z.infer<typeof registerMemberSchema>

@@ -28,6 +28,7 @@ export function MemberForm({ mode, member, titulares, onSuccess, onCancel, submi
   const [name, setName] = useState(member?.name ?? '')
   const [email, setEmail] = useState(member?.email ?? '')
   const [phone, setPhone] = useState(member?.phone ?? '')
+  const [membershipNumber, setMembershipNumber] = useState(member?.membershipNumber ?? '')
   const [category, setCategory] = useState<Member['category']>(member?.category ?? 'TITULAR')
   const [holderId, setHolderId] = useState(member?.holderId ?? '')
   const [status, setStatus] = useState<Member['status']>(member?.status ?? 'PENDENTE')
@@ -56,6 +57,7 @@ export function MemberForm({ mode, member, titulares, onSuccess, onCancel, submi
           email: email.trim(),
           phone: phoneVal,
           category,
+          ...(category === 'TITULAR' && membershipNumber.trim() ? { membershipNumber: membershipNumber.trim() } : {}),
           ...(category !== 'TITULAR' && holderId ? { holderId } : {}),
         }
         await api.post<Member>('/members', body)
@@ -72,6 +74,7 @@ export function MemberForm({ mode, member, titulares, onSuccess, onCancel, submi
           phone: phoneVal,
           category,
           status,
+          membershipNumber: category === 'TITULAR' ? (membershipNumber.trim() || null) : null,
           holderId: category === 'TITULAR' ? null : holderId || undefined,
         }
         await api.patch<Member>(`/members/${member.id}`, body)
@@ -138,6 +141,22 @@ export function MemberForm({ mode, member, titulares, onSuccess, onCancel, submi
         />
       </div>
 
+      {category === 'TITULAR' && (
+        <div>
+          <label htmlFor="membershipNumber" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+            Número do título
+          </label>
+          <input
+            id="membershipNumber"
+            value={membershipNumber}
+            onChange={(e) => setMembershipNumber(e.target.value)}
+            maxLength={20}
+            placeholder="Opcional"
+            className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-gray-300 focus:border-gray-300 outline-none"
+          />
+        </div>
+      )}
+
       <div>
         <label htmlFor="category" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
           Categoria
@@ -148,7 +167,10 @@ export function MemberForm({ mode, member, titulares, onSuccess, onCancel, submi
           onChange={(e) => {
             const v = e.target.value as Member['category']
             setCategory(v)
-            if (v === 'TITULAR') setHolderId('')
+            if (v !== 'TITULAR') {
+              setHolderId('')
+              setMembershipNumber('')
+            }
           }}
           className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm text-on-surface focus:ring-2 focus:ring-gray-300 outline-none bg-white"
         >

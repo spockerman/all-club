@@ -6,6 +6,14 @@ import { primaryButtonClassName } from '@/lib/primary-button'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+function Icon({ name, className = '' }: { name: string; className?: string }) {
+  return (
+    <span className={`material-symbols-outlined ${className}`} aria-hidden>
+      {name}
+    </span>
+  )
+}
+
 const PERIODS = ['MORNING', 'AFTERNOON', 'EVENING', 'ALL_DAY'] as const
 
 type AreaOption = { id: string; name: string }
@@ -58,14 +66,20 @@ export function AgendaBatchForm({ areas, onSuccess, hideCancel, onCancel }: Prop
   if (result) {
     return (
       <div className="space-y-4">
-        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-2">
+        <div className="bg-surface-container rounded-xl border border-[rgba(44,52,55,0.08)] p-4 space-y-2">
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Agendas criadas</span>
-            <span className="font-bold text-green-700">{result.created}</span>
+            <span className="flex items-center gap-1.5 text-on-surface-variant">
+              <Icon name="check_circle" className="text-[16px] text-secondary" />
+              Agendas criadas
+            </span>
+            <span className="font-bold text-on-surface">{result.created}</span>
           </div>
           <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500">Já existiam (ignoradas)</span>
-            <span className="font-bold text-gray-500">{result.skipped}</span>
+            <span className="flex items-center gap-1.5 text-on-surface-variant">
+              <Icon name="do_not_disturb_on" className="text-[16px]" />
+              Já existiam (ignoradas)
+            </span>
+            <span className="font-bold text-on-surface-variant">{result.skipped}</span>
           </div>
         </div>
         <div className="flex gap-3 justify-center pt-2">
@@ -94,7 +108,8 @@ export function AgendaBatchForm({ areas, onSuccess, hideCancel, onCancel }: Prop
       )}
 
       <div>
-        <label htmlFor="batchAreaId" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+        <label htmlFor="batchAreaId" className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
+          <Icon name="place" className="text-[14px]" />
           Área
         </label>
         <select id="batchAreaId" required value={areaId} onChange={(e) => setAreaId(e.target.value)} className={inputClass}>
@@ -107,7 +122,8 @@ export function AgendaBatchForm({ areas, onSuccess, hideCancel, onCancel }: Prop
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label htmlFor="dateFrom" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+          <label htmlFor="dateFrom" className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
+            <Icon name="date_range" className="text-[14px]" />
             Data início
           </label>
           <input
@@ -121,7 +137,8 @@ export function AgendaBatchForm({ areas, onSuccess, hideCancel, onCancel }: Prop
           />
         </div>
         <div>
-          <label htmlFor="dateTo" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+          <label htmlFor="dateTo" className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
+            <Icon name="event_available" className="text-[14px]" />
             Data fim
           </label>
           <input
@@ -137,7 +154,8 @@ export function AgendaBatchForm({ areas, onSuccess, hideCancel, onCancel }: Prop
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+        <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+          <Icon name="schedule" className="text-[14px]" />
           Período
         </label>
         <div className="grid grid-cols-2 gap-2">

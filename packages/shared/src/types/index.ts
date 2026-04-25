@@ -104,6 +104,7 @@ export interface Member {
   email: string
   phone?: string | null
   photoUrl?: string | null
+  membershipNumber?: string | null
   category: MemberCategory
   status: MemberStatus
   holderId?: string | null

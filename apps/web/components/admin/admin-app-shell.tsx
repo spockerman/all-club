@@ -95,7 +95,7 @@ export function AdminAppShell({ children }: { children: ReactNode }) {
   const is = (href: string) => pathname === href || pathname?.startsWith(`${href}/`)
 
   const agendaGroupActive = is('/agendas') || is('/schedule-configs') || is('/schedule-logs')
-  const cadastroGroupActive = is('/users') || is('/access-profiles')
+  const cadastroGroupActive = is('/users') || is('/access-profiles') || is('/marketing')
 
   return (
     <>
@@ -171,6 +171,10 @@ export function AdminAppShell({ children }: { children: ReactNode }) {
             <Link href="/access-profiles" className={is('/access-profiles') ? subActive : subInactive}>
               <NavIcon name="admin_panel_settings" />
               Perfis de acesso
+            </Link>
+            <Link href="/marketing" className={is('/marketing') ? subActive : subInactive}>
+              <NavIcon name="campaign" />
+              Marketing
             </Link>
           </NavGroup>
 

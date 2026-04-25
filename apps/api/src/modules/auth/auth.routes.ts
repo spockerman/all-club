@@ -4,6 +4,7 @@ import {
   forgotPasswordSchema,
   loginSchema,
   refreshTokenSchema,
+  registerMemberSchema,
   resetPasswordSchema,
   updateUserSchema,
 } from '@all-club/shared'
@@ -79,6 +80,15 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
       const e = err as { statusCode?: number; message: string }
       return reply.status(e.statusCode ?? 500).send({ message: e.message })
     }
+  })
+
+  // POST /auth/register-member  (public — auto-cadastro pelo app)
+  app.post('/register-member', async (req, reply) => {
+    const data = registerMemberSchema.parse(req.body)
+    await svc.registerMember(data)
+    return reply.status(200).send({
+      message: 'Se os dados estiverem corretos, você receberá um e-mail para criar sua senha.',
+    })
   })
 
   // POST /auth/forgot-password

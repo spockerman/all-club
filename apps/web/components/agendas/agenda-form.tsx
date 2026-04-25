@@ -7,6 +7,14 @@ import type { Agenda } from '@all-club/shared'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
+function Icon({ name, className = '' }: { name: string; className?: string }) {
+  return (
+    <span className={`material-symbols-outlined ${className}`} aria-hidden>
+      {name}
+    </span>
+  )
+}
+
 const PERIODS = ['MORNING', 'AFTERNOON', 'EVENING', 'ALL_DAY'] as const
 
 type AreaOption = { id: string; name: string }
@@ -68,7 +76,8 @@ export function AgendaForm({ mode, agenda, areas, onSuccess, onCancel, submitLab
 
       {mode === 'create' && (
         <div>
-          <label htmlFor="areaId" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+          <label htmlFor="areaId" className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
+            <Icon name="place" className="text-[14px]" />
             Área
           </label>
           <select id="areaId" required value={areaId} onChange={(e) => setAreaId(e.target.value)} className={inputClass}>
@@ -81,7 +90,8 @@ export function AgendaForm({ mode, agenda, areas, onSuccess, onCancel, submitLab
       )}
 
       <div>
-        <label htmlFor="agendaDate" className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">
+        <label htmlFor="agendaDate" className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-1">
+          <Icon name="event" className="text-[14px]" />
           Data
         </label>
         <input
@@ -96,7 +106,8 @@ export function AgendaForm({ mode, agenda, areas, onSuccess, onCancel, submitLab
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+        <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-on-surface-variant mb-2">
+          <Icon name="schedule" className="text-[14px]" />
           Período
         </label>
         <div className="grid grid-cols-2 gap-2">

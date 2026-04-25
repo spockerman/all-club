@@ -28,6 +28,9 @@ export default async function MemberDetailPage({ params }: { params: { id: strin
       <DetailCard>
         <DetailField label="E-mail" value={member.email} />
         <DetailField label="Telefone" value={member.phone ?? '—'} />
+        {member.membershipNumber && (
+          <DetailField label="Número do título" value={member.membershipNumber} />
+        )}
         <DetailField label="Categoria" value={CATEGORY_LABEL[member.category]} />
         <DetailField
           label="Status"
