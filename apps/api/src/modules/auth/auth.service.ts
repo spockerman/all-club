@@ -5,9 +5,10 @@ import type {
   ForgotPasswordInput,
   JwtPayload,
   LoginInput,
-  RegisterMemberInput,
+  RequestOtpInput,
   ResetPasswordInput,
   UpdateUserInput,
+  VerifyOtpInput,
 } from '@all-club/shared'
 import {
   getDummyHash,
@@ -22,6 +23,10 @@ import {
   resetTokenExpiresAt,
 } from '../../common/utils/token.utils.js'
 import { buildActivationEmail } from '../../common/plugins/mailer.plugin.js'
+
+function generateOtpCode(): string {
+  return Math.floor(100000 + Math.random() * 900000).toString()
+}
 
 const MEMBER_PERMISSIONS = ['agenda:view', 'booking:view', 'booking:create', 'booking:cancel', 'area:view']
 const MAX_FAILED_ATTEMPTS = 5
@@ -328,29 +333,108 @@ export class AuthService {
     })
   }
 
-  async registerMember(data: RegisterMemberInput) {
+  async requestOtp(data: RequestOtpInput) {
     const member = await this.prisma.member.findUnique({
       where: { email: data.email },
       include: { holder: true, user: true },
     })
 
-    // Generic response — never reveal whether email/number was found
-    if (!member) return
+    if (!member) { console.log('[OTP] membro não encontrado:', data.email); return }
 
-    // Resolve the membership number: TITULAR owns it, DEPENDENTE inherits from holder
     const resolvedNumber = member.membershipNumber ?? member.holder?.membershipNumber ?? null
-    if (!resolvedNumber || resolvedNumber !== data.membershipNumber) return
+    if (!resolvedNumber || resolvedNumber !== data.membershipNumber) {
+      console.log('[OTP] matrícula não bate — salvo:', resolvedNumber, '| enviado:', data.membershipNumber)
+      return
+    }
 
-    // Account already exists
-    if (member.user) return
+    if (member.user) { console.log('[OTP] membro já tem conta:', member.email); return }
 
-    // Find the "Associado" access profile
+    const recentOtp = await this.prisma.memberOtp.findFirst({
+      where: {
+        memberId: member.id,
+        usedAt: null,
+        createdAt: { gt: new Date(Date.now() - 60_000) },
+      },
+    })
+    if (recentOtp) { console.log('[OTP] rate limit ativo para:', member.email); return }
+
+    // Invalidate any previous unused OTPs
+    await this.prisma.memberOtp.deleteMany({
+      where: { memberId: member.id, usedAt: null },
+    })
+
+    const code = generateOtpCode()
+    await this.prisma.memberOtp.create({
+      data: {
+        memberId: member.id,
+        code,
+        expiresAt: new Date(Date.now() + 10 * 60_000),
+      },
+    })
+
+    console.log('[OTP] enviando SMS para', member.phone)
+    try {
+      await this.app.sms.send(
+        member.phone!,
+        `All Club: seu código de acesso é ${code}. Válido por 10 minutos.`,
+      )
+      console.log('[OTP] SMS enviado com sucesso')
+    } catch (err) {
+      console.error('[OTP] erro ao enviar SMS:', err)
+      throw err
+    }
+  }
+
+  async verifyOtp(data: VerifyOtpInput) {
+    const member = await this.prisma.member.findUnique({ where: { email: data.email } })
+
+    if (!member) {
+      throw Object.assign(new Error('Código inválido ou expirado.'), { statusCode: 400 })
+    }
+
+    const otp = await this.prisma.memberOtp.findFirst({
+      where: {
+        memberId: member.id,
+        usedAt: null,
+        expiresAt: { gt: new Date() },
+      },
+      orderBy: { createdAt: 'desc' },
+    })
+
+    if (!otp) {
+      throw Object.assign(new Error('Código inválido ou expirado.'), { statusCode: 400 })
+    }
+
+    // Increment attempts before checking — prevents brute force
+    const updated = await this.prisma.memberOtp.update({
+      where: { id: otp.id },
+      data: { attempts: { increment: 1 } },
+    })
+
+    if (updated.attempts > 3) {
+      await this.prisma.memberOtp.update({
+        where: { id: otp.id },
+        data: { usedAt: new Date() },
+      })
+      throw Object.assign(new Error('Número máximo de tentativas atingido. Solicite um novo código.'), { statusCode: 400 })
+    }
+
+    if (otp.code !== data.code) {
+      throw Object.assign(new Error('Código inválido.'), { statusCode: 400 })
+    }
+
+    // Mark OTP as used
+    await this.prisma.memberOtp.update({
+      where: { id: otp.id },
+      data: { usedAt: new Date() },
+    })
+
+    // Find "Associado" access profile
     const associateProfile = await this.prisma.accessProfile.findUnique({
       where: { name: 'Associado' },
     })
 
-    const resetToken = generateResetToken()
-    const scheme = process.env.APP_SCHEME ?? 'all-club'
+    const setupToken = generateResetToken()
 
     await this.prisma.$transaction(async (tx) => {
       const user = await tx.user.create({
@@ -369,7 +453,7 @@ export class AuthService {
           userId: user.id,
           passwordHash: '',
           mustChangePassword: true,
-          resetToken,
+          resetToken: setupToken,
           resetTokenExpiresAt: resetTokenExpiresAt(),
         },
       })
@@ -379,17 +463,9 @@ export class AuthService {
           data: { userId: user.id, accessProfileId: associateProfile.id },
         })
       }
-
-      const { html, text } = buildActivationEmail({ name: member.name, token: resetToken, scheme })
-
-      await this.app.mailer.sendMail({
-        from: process.env.MAILTRAP_FROM ?? 'All Club <noreply@allclub.com>',
-        to: member.email,
-        subject: 'Bem-vindo ao All Club — Crie sua senha',
-        html,
-        text,
-      })
     })
+
+    return { setupToken }
   }
 
   async forgotPassword(

@@ -17,6 +17,7 @@ import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/lib/auth'
 import { api } from '@/lib/api'
+import { HomeTopBar } from '@/components/ui/HomeTopBar'
 
 const { width: SCREEN_W } = Dimensions.get('window')
 const CAROUSEL_ITEM_W = SCREEN_W - 48
@@ -240,14 +241,7 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      {/* Fixed top bar */}
-      <View style={s.topBar}>
-        <Image source={require('@/assets/images/band.png')} style={s.bandIcon} resizeMode="contain" />
-        <Text style={s.greetName}>Olá, {firstName}</Text>
-        <TouchableOpacity style={s.notifBtn} onPress={() => router.push('/(tabs)/profile')}>
-          <Ionicons name="notifications-outline" size={22} color="#374151" />
-        </TouchableOpacity>
-      </View>
+      <HomeTopBar name={firstName} />
 
       {loading ? (
         <ActivityIndicator style={{ marginTop: 48 }} color="#6B7280" />
@@ -464,35 +458,6 @@ const s = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-  },
-  topBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  bandIcon: {
-    width: 36,
-    height: 36,
-  },
-  greetName: {
-    flex: 1,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    letterSpacing: -0.2,
-  },
-  notifBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   scroll: {
     paddingTop: 20,

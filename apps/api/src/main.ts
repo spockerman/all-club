@@ -19,6 +19,7 @@ import { marketingRoutes } from './modules/marketing/marketing.routes.js'
 import { prismaPlugin } from './common/plugins/prisma.plugin.js'
 import { schedulerPlugin } from './common/plugins/scheduler.plugin.js'
 import { mailerPlugin } from './common/plugins/mailer.plugin.js'
+import { smsPlugin } from './common/plugins/sms.plugin.js'
 import { initDummyHash } from './common/utils/password.utils.js'
 
 const app = Fastify({ logger: true })
@@ -45,6 +46,7 @@ await app.register(swagger, {
 await app.register(swaggerUi, { routePrefix: '/docs' })
 await app.register(prismaPlugin)
 await app.register(mailerPlugin)
+await app.register(smsPlugin)
 await app.register(schedulerPlugin)
 
 // Public routes

@@ -4,9 +4,10 @@ import {
   forgotPasswordSchema,
   loginSchema,
   refreshTokenSchema,
-  registerMemberSchema,
+  requestOtpSchema,
   resetPasswordSchema,
   updateUserSchema,
+  verifyOtpSchema,
 } from '@all-club/shared'
 import { authenticate } from '../../common/hooks/authenticate.hook.js'
 import { AuthService } from './auth.service.js'
@@ -82,13 +83,25 @@ export const authRoutes: FastifyPluginAsync = async (app) => {
     }
   })
 
-  // POST /auth/register-member  (public — auto-cadastro pelo app)
-  app.post('/register-member', async (req, reply) => {
-    const data = registerMemberSchema.parse(req.body)
-    await svc.registerMember(data)
+  // POST /auth/request-otp  (public — solicita código SMS)
+  app.post('/request-otp', async (req, reply) => {
+    const data = requestOtpSchema.parse(req.body)
+    await svc.requestOtp(data)
     return reply.status(200).send({
-      message: 'Se os dados estiverem corretos, você receberá um e-mail para criar sua senha.',
+      message: 'Se os dados estiverem corretos, você receberá um SMS com o código.',
     })
+  })
+
+  // POST /auth/verify-otp  (public — valida código e cria conta)
+  app.post('/verify-otp', async (req, reply) => {
+    const data = verifyOtpSchema.parse(req.body)
+    try {
+      const result = await svc.verifyOtp(data)
+      return reply.status(200).send(result)
+    } catch (err: unknown) {
+      const e = err as { statusCode?: number; message: string }
+      return reply.status(e.statusCode ?? 500).send({ message: e.message })
+    }
   })
 
   // POST /auth/forgot-password

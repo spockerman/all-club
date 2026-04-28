@@ -3,10 +3,7 @@ import 'dotenv/config'
 
 export default defineConfig({
   schema: './prisma/schema.prisma',
-  migrate: {
-    async adapter() {
-      const { PrismaPg } = await import('@prisma/adapter-pg')
-      return new PrismaPg({ connectionString: process.env.DATABASE_URL! })
-    },
+  datasource: {
+    url: process.env.DATABASE_URL!,
   },
 })

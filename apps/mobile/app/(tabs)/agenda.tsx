@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from 'react'
+import { useFocusEffect } from 'expo-router'
 import {
   View,
   Text,
@@ -254,7 +255,13 @@ export default function AgendaScreen() {
       .finally(() => setLoading(false))
   }, [])
 
+  // Reload when date changes
   useEffect(() => { loadSlots(selected) }, [selected, loadSlots])
+
+  // Reload when returning from booking confirmation
+  useFocusEffect(
+    useCallback(() => { loadSlots(selected) }, [loadSlots, selected]),
+  )
 
   const filtered = useMemo(() => {
     if (filter === 'ALL') return slots
