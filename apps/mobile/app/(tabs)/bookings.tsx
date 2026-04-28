@@ -10,7 +10,6 @@ import {
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
-import { useRouter } from 'expo-router'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { colors, radii, shadows } from '@/constants/theme'
@@ -21,47 +20,46 @@ import { ScreenHeader } from '@/components/ui/ScreenHeader'
 interface BookingSummary {
   id: string
   date: string
-  status: 'CONFIRMADO' | 'CANCELADO' | 'EXPIRADO'
+  period: 'MORNING' | 'AFTERNOON' | 'EVENING' | 'ALL_DAY'
+  status: 'AVAILABLE' | 'RESERVED'
   area: { id: string; name: string }
-  slot: { startTime: string; endTime: string }
+  reservation: { id: string; status: 'CONFIRMED' | 'CANCELLED'; member: { id: string; name: string } } | null
 }
 
 // ── Static maps ───────────────────────────────────────────────────────────────
 
-const STATUS_LABEL: Record<string, string> = {
-  CONFIRMADO: 'Confirmado',
-  CANCELADO: 'Cancelado',
-  EXPIRADO: 'Expirado',
+const PERIOD_LABEL: Record<string, string> = {
+  MORNING: 'Manhã',
+  AFTERNOON: 'Tarde',
+  EVENING: 'Noite',
+  ALL_DAY: 'Dia todo',
+}
+
+const RESERVATION_STATUS_LABEL: Record<string, string> = {
+  CONFIRMED: 'Confirmado',
+  CANCELLED: 'Cancelado',
 }
 
 const STATUS_BADGE_BG: Record<string, string> = {
-  CONFIRMADO: '#F0FDF4',
-  CANCELADO: '#FEF2F2',
-  EXPIRADO: colors.ink100,
+  CONFIRMED: '#F0FDF4',
+  CANCELLED: '#FEF2F2',
 }
 
 const STATUS_BADGE_TEXT: Record<string, string> = {
-  CONFIRMADO: '#16A34A',
-  CANCELADO: '#DC2626',
-  EXPIRADO: colors.ink500,
+  CONFIRMED: '#16A34A',
+  CANCELLED: '#DC2626',
 }
 
 const STATUS_BORDER: Record<string, string> = {
-  CONFIRMADO: '#16A34A',
-  CANCELADO: '#DC2626',
-  EXPIRADO: colors.ink300,
+  CONFIRMED: '#16A34A',
+  CANCELLED: '#DC2626',
 }
 
 // ── BookingCard ───────────────────────────────────────────────────────────────
 
-function BookingCard({
-  item,
-  onPress,
-}: {
-  item: BookingSummary
-  onPress: (id: string) => void
-}) {
+function BookingCard({ item }: { item: BookingSummary }) {
   const [hovered, setHovered] = useState(false)
+  const reservationStatus = item.reservation?.status ?? 'CONFIRMED'
 
   const dateStr = new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR', {
     weekday: 'short',
@@ -72,12 +70,11 @@ function BookingCard({
 
   return (
     <Pressable
-      onPress={() => onPress(item.id)}
       onHoverIn={() => setHovered(true)}
       onHoverOut={() => setHovered(false)}
       style={[
         s.card,
-        { borderLeftColor: STATUS_BORDER[item.status] ?? colors.ink300 },
+        { borderLeftColor: STATUS_BORDER[reservationStatus] ?? colors.ink300 },
         hovered && s.cardHovered,
       ]}
     >
@@ -101,33 +98,26 @@ function BookingCard({
           <Text style={[s.cardDot, hovered && s.cardSubInv]}>·</Text>
           <Ionicons name="time-outline" size={11} color={hovered ? colors.ink400 : colors.ink500} />
           <Text style={[s.cardMetaText, hovered && s.cardSubInv]}>
-            {item.slot.startTime}–{item.slot.endTime}
+            {PERIOD_LABEL[item.period] ?? item.period}
           </Text>
         </View>
       </View>
 
-      {/* Badge + chevron */}
-      <View style={s.cardRight}>
-        <View style={[
-          s.badge,
+      {/* Badge */}
+      <View style={[
+        s.badge,
+        hovered
+          ? s.badgeHovered
+          : { backgroundColor: STATUS_BADGE_BG[reservationStatus] ?? colors.ink100 },
+      ]}>
+        <Text style={[
+          s.badgeText,
           hovered
-            ? s.badgeHovered
-            : { backgroundColor: STATUS_BADGE_BG[item.status] ?? colors.ink100 },
+            ? s.badgeTextHovered
+            : { color: STATUS_BADGE_TEXT[reservationStatus] ?? colors.ink500 },
         ]}>
-          <Text style={[
-            s.badgeText,
-            hovered
-              ? s.badgeTextHovered
-              : { color: STATUS_BADGE_TEXT[item.status] ?? colors.ink500 },
-          ]}>
-            {STATUS_LABEL[item.status] ?? item.status}
-          </Text>
-        </View>
-        <Ionicons
-          name="chevron-forward"
-          size={14}
-          color={hovered ? colors.ink300 : colors.ink400}
-        />
+          {RESERVATION_STATUS_LABEL[reservationStatus] ?? reservationStatus}
+        </Text>
       </View>
     </Pressable>
   )
@@ -140,15 +130,14 @@ export default function BookingsScreen() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [query, setQuery] = useState('')
-  const router = useRouter()
   const { user } = useAuth()
 
   const load = useCallback(() => {
+    const memberId = user?.memberId
+    if (!memberId) { setLoading(false); return }
     setLoading(true)
     setError(false)
-    const memberId = user?.memberId
-    const qs = memberId ? `?memberId=${memberId}` : ''
-    api.get<BookingSummary[]>(`/bookings${qs}`)
+    api.get<BookingSummary[]>(`/agendas?memberId=${memberId}`)
       .then(setBookings)
       .catch(() => setError(true))
       .finally(() => setLoading(false))
@@ -159,7 +148,7 @@ export default function BookingsScreen() {
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
     if (!q) return bookings
-    return bookings.filter((b) => b.area.name.toLowerCase().includes(q))
+    return bookings.filter((b) => b.area.name.toLowerCase().includes(q) || PERIOD_LABEL[b.period]?.toLowerCase().includes(q))
   }, [bookings, query])
 
   return (
@@ -200,12 +189,7 @@ export default function BookingsScreen() {
           keyExtractor={(item) => item.id}
           contentContainerStyle={s.list}
           showsVerticalScrollIndicator={false}
-          renderItem={({ item }) => (
-            <BookingCard
-              item={item}
-              onPress={(id) => router.push(`/bookings/${id}` as never)}
-            />
-          )}
+          renderItem={({ item }) => <BookingCard item={item} />}
           ListEmptyComponent={
             <View style={s.center}>
               <Ionicons name="receipt-outline" size={40} color={colors.ink300} />

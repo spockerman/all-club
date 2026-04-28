@@ -38,12 +38,14 @@ export class AgendasService {
     dateTo?: string
     status?: string
     period?: string
+    memberId?: string
   }) {
     return this.prisma.agenda.findMany({
       where: {
         ...(filters.areaId ? { areaId: filters.areaId } : {}),
         ...(filters.status ? { status: filters.status as never } : {}),
         ...(filters.period ? { period: filters.period as never } : {}),
+        ...(filters.memberId ? { reservation: { memberId: filters.memberId } } : {}),
         ...(filters.dateFrom || filters.dateTo
           ? {
               date: {

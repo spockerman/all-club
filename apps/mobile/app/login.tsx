@@ -12,6 +12,7 @@ import {
 } from 'react-native'
 import { useState } from 'react'
 import { useRouter } from 'expo-router'
+import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '@/lib/auth'
 
 const logo = require('@/assets/images/logo.png')
