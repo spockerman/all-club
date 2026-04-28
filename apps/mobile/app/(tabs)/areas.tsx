@@ -6,6 +6,7 @@ import { useRouter } from 'expo-router'
 import { api, ApiError } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { AreaCard, type AreaSummary } from '@/components/areas/AreaCard'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 
 export default function AreasScreen() {
   const [areas, setAreas] = useState<AreaSummary[]>([])
@@ -34,15 +35,7 @@ export default function AreasScreen() {
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Áreas Comuns</Text>
-        <TouchableOpacity
-          style={s.notifBtn}
-          onPress={() => router.push('/(tabs)/profile')}
-        >
-          <Ionicons name="notifications-outline" size={22} color="#374151" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader title="Áreas Comuns" />
 
       <View style={s.searchWrap}>
         <Ionicons name="search-outline" size={16} color="#9CA3AF" style={s.searchIcon} />
@@ -102,25 +95,6 @@ export default function AreasScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#FFFFFF' },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10 },
-
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#E5E7EB',
-  },
-  headerTitle: { fontSize: 20, fontWeight: '700', color: '#111827', letterSpacing: -0.3 },
-  notifBtn: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 
   searchWrap: {
     flexDirection: 'row',

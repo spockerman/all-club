@@ -12,7 +12,6 @@ import {
 } from 'react-native'
 import { useState } from 'react'
 import { useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
 import { useAuth } from '@/lib/auth'
 
 const logo = require('@/assets/images/logo.png')
@@ -23,7 +22,6 @@ export default function LoginScreen() {
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
   const [rememberMe, setRememberMe] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
@@ -100,31 +98,18 @@ export default function LoginScreen() {
                   <Text style={styles.forgotLink}>Esqueceu?</Text>
                 </TouchableOpacity>
               </View>
-              <View style={styles.inputRow}>
-                <TextInput
-                  style={[styles.input, styles.inputWithIcon]}
-                  placeholder="••••••••"
-                  placeholderTextColor="#9CA3AF"
-                  secureTextEntry={!showPassword}
-                  textContentType="password"
-                  value={password}
-                  onChangeText={setPassword}
-                  onSubmitEditing={handleLogin}
-                  returnKeyType="go"
-                  editable={!loading}
-                />
-                <TouchableOpacity
-                  style={styles.eyeBtn}
-                  onPress={() => setShowPassword((v) => !v)}
-                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                >
-                  <Ionicons
-                    name={showPassword ? 'eye-off-outline' : 'eye-outline'}
-                    size={16}
-                    color="#9CA3AF"
-                  />
-                </TouchableOpacity>
-              </View>
+              <TextInput
+                style={styles.input}
+                placeholder="••••••••"
+                placeholderTextColor="#9CA3AF"
+                secureTextEntry
+                textContentType="password"
+                value={password}
+                onChangeText={setPassword}
+                onSubmitEditing={handleLogin}
+                returnKeyType="go"
+                editable={!loading}
+              />
             </View>
 
             {/* Remember me */}
@@ -254,20 +239,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#1F2937',
   },
-  inputRow: {
-    position: 'relative',
-  },
-  inputWithIcon: {
-    paddingRight: 42,
-  },
-  eyeBtn: {
-    position: 'absolute',
-    right: 14,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
-
   // ── Checkbox ────────────────────────────────────────────────────────────────
   checkRow: {
     flexDirection: 'row',

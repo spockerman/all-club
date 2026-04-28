@@ -14,6 +14,7 @@ import { useRouter } from 'expo-router'
 import { api } from '@/lib/api'
 import { useAuth } from '@/lib/auth'
 import { colors, radii, shadows } from '@/constants/theme'
+import { ScreenHeader } from '@/components/ui/ScreenHeader'
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -164,10 +165,7 @@ export default function BookingsScreen() {
   return (
     <SafeAreaView style={s.root} edges={['top']}>
 
-      {/* Header */}
-      <View style={s.header}>
-        <Text style={s.headerTitle}>Minhas Reservas</Text>
-      </View>
+      <ScreenHeader title="Minhas Reservas" />
 
       {/* Search */}
       <View style={s.searchWrap}>
@@ -227,19 +225,6 @@ export default function BookingsScreen() {
 const s = StyleSheet.create({
   root: { flex: 1, backgroundColor: colors.ink0 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 10 },
-
-  header: {
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.ink200,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.ink900,
-    letterSpacing: -0.3,
-  },
 
   searchWrap: {
     flexDirection: 'row',

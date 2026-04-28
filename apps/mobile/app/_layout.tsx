@@ -82,7 +82,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (!ctx || ctx.loading) return
-    const publicScreens = ['login', 'register', 'set-password']
+    const publicScreens = ['login', 'register', 'verify-otp', 'set-password']
     const onPublicScreen = publicScreens.includes(segments[0] as string)
     if (!ctx.token && !onPublicScreen) {
       router.replace('/login')
@@ -111,6 +111,7 @@ export default function RootLayout() {
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="login" options={{ headerShown: false }} />
           <Stack.Screen name="register" options={{ headerShown: false }} />
+          <Stack.Screen name="verify-otp" options={{ headerShown: false }} />
           <Stack.Screen name="set-password" options={{ headerShown: false }} />
           <Stack.Screen name="bookings/new" options={{ headerShown: false }} />
           <Stack.Screen name="bookings/[id]" options={{ headerShown: false }} />

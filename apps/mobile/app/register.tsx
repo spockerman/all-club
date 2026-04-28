@@ -12,7 +12,6 @@ import {
 } from 'react-native'
 import { useState } from 'react'
 import { useRouter } from 'expo-router'
-import { Ionicons } from '@expo/vector-icons'
 import { api } from '@/lib/api'
 
 const logo = require('@/assets/images/logo.png')
@@ -24,18 +23,17 @@ export default function RegisterScreen() {
   const [membershipNumber, setMembershipNumber] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
 
   async function handleSubmit() {
     if (!email.trim() || !membershipNumber.trim()) return
     setError(null)
     setLoading(true)
     try {
-      await api.post('/auth/register-member', {
+      await api.post('/auth/request-otp', {
         email: email.trim().toLowerCase(),
         membershipNumber: membershipNumber.trim(),
       })
-      setSuccess(true)
+      router.push({ pathname: '/verify-otp', params: { email: email.trim().toLowerCase() } })
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Não foi possível conectar ao servidor.'
       setError(msg)
@@ -45,23 +43,6 @@ export default function RegisterScreen() {
   }
 
   const canSubmit = email.trim().length > 0 && membershipNumber.trim().length > 0 && !loading
-
-  if (success) {
-    return (
-      <View style={styles.successRoot}>
-        <View style={styles.successCard}>
-          <Ionicons name="mail-outline" size={48} color="#374151" style={{ marginBottom: 16 }} />
-          <Text style={styles.successTitle}>Verifique seu e-mail</Text>
-          <Text style={styles.successText}>
-            Se os dados informados estiverem corretos, você receberá um e-mail com o link para criar sua senha.
-          </Text>
-          <TouchableOpacity style={styles.backBtn} onPress={() => router.replace('/login')}>
-            <Text style={styles.backBtnText}>Voltar para o login</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    )
-  }
 
   return (
     <KeyboardAvoidingView
@@ -90,7 +71,6 @@ export default function RegisterScreen() {
               </View>
             )}
 
-            {/* E-mail */}
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>E-mail</Text>
               <TextInput
@@ -107,7 +87,6 @@ export default function RegisterScreen() {
               />
             </View>
 
-            {/* Número do título */}
             <View style={styles.fieldGroup}>
               <Text style={styles.label}>Número do título</Text>
               <TextInput
@@ -208,30 +187,4 @@ const styles = StyleSheet.create({
   submitBtnText: { color: '#FFFFFF', fontSize: 14, fontWeight: '700', letterSpacing: 1.5 },
   loginLink: { alignItems: 'center' },
   loginLinkText: { fontSize: 13, color: '#6B7280' },
-
-  // ── Success state ────────────────────────────────────────────────────────────
-  successRoot: {
-    flex: 1,
-    backgroundColor: '#F3F4F6',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 24,
-  },
-  successCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: 32,
-    alignItems: 'center',
-    width: '100%',
-    maxWidth: 384,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
-    shadowRadius: 12,
-    elevation: 4,
-  },
-  successTitle: { fontSize: 18, fontWeight: '700', color: '#1F2937', marginBottom: 12 },
-  successText: { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20, marginBottom: 24 },
-  backBtn: { paddingVertical: 10 },
-  backBtnText: { fontSize: 14, color: '#374151', fontWeight: '600' },
 })
