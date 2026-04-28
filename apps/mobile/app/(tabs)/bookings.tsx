@@ -61,7 +61,8 @@ function BookingCard({ item }: { item: BookingSummary }) {
   const [hovered, setHovered] = useState(false)
   const reservationStatus = item.reservation?.status ?? 'CONFIRMED'
 
-  const dateStr = new Date(item.date + 'T00:00:00').toLocaleDateString('pt-BR', {
+  const [y, m, d] = item.date.split('T')[0].split('-').map(Number)
+  const dateStr = new Date(y, m - 1, d).toLocaleDateString('pt-BR', {
     weekday: 'short',
     day: '2-digit',
     month: 'short',
@@ -92,32 +93,31 @@ function BookingCard({ item }: { item: BookingSummary }) {
         <Text style={[s.cardArea, hovered && s.cardTextInv]} numberOfLines={1}>
           {item.area.name}
         </Text>
-        <View style={s.cardMeta}>
+        <View style={s.cardMetaRow}>
           <Ionicons name="calendar-outline" size={11} color={hovered ? colors.ink400 : colors.ink500} />
           <Text style={[s.cardMetaText, hovered && s.cardSubInv]}>{dateStr}</Text>
-          <Text style={[s.cardDot, hovered && s.cardSubInv]}>·</Text>
+        </View>
+        <View style={s.cardMetaRow}>
           <Ionicons name="time-outline" size={11} color={hovered ? colors.ink400 : colors.ink500} />
           <Text style={[s.cardMetaText, hovered && s.cardSubInv]}>
             {PERIOD_LABEL[item.period] ?? item.period}
           </Text>
         </View>
-      </View>
-
-      {/* Badge */}
-      <View style={[
-        s.badge,
-        hovered
-          ? s.badgeHovered
-          : { backgroundColor: STATUS_BADGE_BG[reservationStatus] ?? colors.ink100 },
-      ]}>
-        <Text style={[
-          s.badgeText,
+        <View style={[
+          s.badge,
           hovered
-            ? s.badgeTextHovered
-            : { color: STATUS_BADGE_TEXT[reservationStatus] ?? colors.ink500 },
+            ? s.badgeHovered
+            : { backgroundColor: STATUS_BADGE_BG[reservationStatus] ?? colors.ink100 },
         ]}>
-          {RESERVATION_STATUS_LABEL[reservationStatus] ?? reservationStatus}
-        </Text>
+          <Text style={[
+            s.badgeText,
+            hovered
+              ? s.badgeTextHovered
+              : { color: STATUS_BADGE_TEXT[reservationStatus] ?? colors.ink500 },
+          ]}>
+            {RESERVATION_STATUS_LABEL[reservationStatus] ?? reservationStatus}
+          </Text>
+        </View>
       </View>
     </Pressable>
   )
@@ -228,7 +228,7 @@ const s = StyleSheet.create({
 
   card: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     backgroundColor: colors.ink0,
     borderRadius: radii.md,
     borderWidth: 1,
@@ -249,18 +249,17 @@ const s = StyleSheet.create({
     backgroundColor: colors.ink100,
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 2,
   },
   cardIconHovered: { backgroundColor: colors.ink700 },
-  cardBody: { flex: 1, gap: 4 },
+  cardBody: { flex: 1, gap: 5 },
   cardArea: { fontSize: 14, fontWeight: '600', color: colors.ink900 },
-  cardMeta: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  cardMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   cardMetaText: { fontSize: 11, color: colors.ink500 },
-  cardDot: { fontSize: 11, color: colors.ink300 },
   cardTextInv: { color: colors.ink0 },
   cardSubInv: { color: colors.ink400 },
 
-  cardRight: { alignItems: 'flex-end', gap: 6 },
-  badge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radii.full },
+  badge: { alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 3, borderRadius: radii.full, marginTop: 2 },
   badgeHovered: { backgroundColor: colors.ink700 },
   badgeText: { fontSize: 11, fontWeight: '600' },
   badgeTextHovered: { color: colors.ink200 },

@@ -61,10 +61,11 @@ function formatMediaDate(iso: string) {
 }
 
 function formatBookingDate(iso: string) {
-  const d = new Date(iso)
-  const weekday = d.toLocaleDateString('pt-BR', { weekday: 'long' })
-  const date = d.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
-  return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${date}`
+  const [y, m, d] = iso.split('T')[0].split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  const weekday = date.toLocaleDateString('pt-BR', { weekday: 'long' })
+  const dateStr = date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long' })
+  return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${dateStr}`
 }
 
 // ── Fullscreen image viewer ────────────────────────────────────────────────────
