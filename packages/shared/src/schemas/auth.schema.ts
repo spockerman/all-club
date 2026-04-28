@@ -66,9 +66,14 @@ export const assignProfilesSchema = z.object({
   profileIds: z.array(z.string().uuid()),
 })
 
-export const registerMemberSchema = z.object({
+export const requestOtpSchema = z.object({
   email: z.string().email(),
   membershipNumber: z.string().min(1).max(20),
+})
+
+export const verifyOtpSchema = z.object({
+  email: z.string().email(),
+  code: z.string().length(6).regex(/^\d{6}$/, 'Código deve ter 6 dígitos numéricos.'),
 })
 
 export type LoginInput = z.infer<typeof loginSchema>
@@ -80,4 +85,5 @@ export type CreateMemberUserInput = z.infer<typeof createMemberUserSchema>
 export type UpdateUserInput = z.infer<typeof updateUserSchema>
 export type CreateAccessProfileInput = z.infer<typeof createAccessProfileSchema>
 export type UpdateAccessProfileInput = z.infer<typeof updateAccessProfileSchema>
-export type RegisterMemberInput = z.infer<typeof registerMemberSchema>
+export type RequestOtpInput = z.infer<typeof requestOtpSchema>
+export type VerifyOtpInput = z.infer<typeof verifyOtpSchema>
