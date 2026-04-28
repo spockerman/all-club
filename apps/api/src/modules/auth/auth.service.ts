@@ -22,7 +22,6 @@ import {
   refreshTokenExpiresAt,
   resetTokenExpiresAt,
 } from '../../common/utils/token.utils.js'
-import { buildActivationEmail } from '../../common/plugins/mailer.plugin.js'
 
 function generateOtpCode(): string {
   return Math.floor(100000 + Math.random() * 900000).toString()
@@ -339,15 +338,12 @@ export class AuthService {
       include: { holder: true, user: true },
     })
 
-    if (!member) { console.log('[OTP] membro não encontrado:', data.email); return }
+    if (!member) return
 
     const resolvedNumber = member.membershipNumber ?? member.holder?.membershipNumber ?? null
-    if (!resolvedNumber || resolvedNumber !== data.membershipNumber) {
-      console.log('[OTP] matrícula não bate — salvo:', resolvedNumber, '| enviado:', data.membershipNumber)
-      return
-    }
+    if (!resolvedNumber || resolvedNumber !== data.membershipNumber) return
 
-    if (member.user) { console.log('[OTP] membro já tem conta:', member.email); return }
+    if (member.user) return
 
     const recentOtp = await this.prisma.memberOtp.findFirst({
       where: {
@@ -356,9 +352,8 @@ export class AuthService {
         createdAt: { gt: new Date(Date.now() - 60_000) },
       },
     })
-    if (recentOtp) { console.log('[OTP] rate limit ativo para:', member.email); return }
+    if (recentOtp) return
 
-    // Invalidate any previous unused OTPs
     await this.prisma.memberOtp.deleteMany({
       where: { memberId: member.id, usedAt: null },
     })
@@ -372,17 +367,10 @@ export class AuthService {
       },
     })
 
-    console.log('[OTP] enviando SMS para', member.phone)
-    try {
-      await this.app.sms.send(
-        member.phone!,
-        `All Club: seu código de acesso é ${code}. Válido por 10 minutos.`,
-      )
-      console.log('[OTP] SMS enviado com sucesso')
-    } catch (err) {
-      console.error('[OTP] erro ao enviar SMS:', err)
-      throw err
-    }
+    await this.app.sms.send(
+      member.phone!,
+      `All Club: seu código de acesso é ${code}. Válido por 10 minutos.`,
+    )
   }
 
   async verifyOtp(data: VerifyOtpInput) {
@@ -489,16 +477,13 @@ export class AuthService {
       data: { event: 'PASSWORD_RESET_REQUESTED', userId: user.id, ...meta },
     })
 
-    const scheme = process.env.APP_SCHEME ?? 'all-club'
-    const { html, text } = buildActivationEmail({ name: user.name, token: resetToken, scheme })
-
-    await this.app.mailer.sendMail({
-      from: process.env.MAILTRAP_FROM ?? 'All Club <noreply@allclub.com>',
-      to: user.email,
-      subject: 'All Club — Redefinição de senha',
-      html,
-      text,
-    })
+    if (user.phone) {
+      const scheme = process.env.APP_SCHEME ?? 'all-club'
+      await this.app.sms.send(
+        user.phone,
+        `All Club: redefina sua senha acessando ${scheme}://set-password?token=${resetToken}`,
+      )
+    }
   }
 
   async resetPassword(

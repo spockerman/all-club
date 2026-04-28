@@ -1,23 +1,28 @@
 {
   "expo": {
-    "name": "All Club",
-    "slug": "all-club",
+    "name": "Centro Avareense",
+    "slug": "centro-avareense",
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "icon": "./assets/images/icon.png",
     "splash": {
+      "image": "./assets/images/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#F7F7F7"
     },
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": false,
-      "bundleIdentifier": "com.allclub.app"
+      "bundleIdentifier": "br.centroavareense.app"
     },
     "android": {
       "adaptiveIcon": {
+        "foregroundImage": "./assets/images/adaptive-icon.png",
         "backgroundColor": "#F7F7F7"
       },
-      "package": "com.allclub.app"
+      "package": "br.centroavareense.app"
     },
     "scheme": "all-club",
     "plugins": ["expo-router", "expo-secure-store"]
