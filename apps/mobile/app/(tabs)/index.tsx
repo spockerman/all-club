@@ -14,7 +14,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
+import { useFocusEffect } from 'expo-router'
 import { useAuth } from '@/lib/auth'
 import { api } from '@/lib/api'
 import { HomeTopBar } from '@/components/ui/HomeTopBar'
@@ -34,12 +35,20 @@ type MarketingMedia = {
   createdAt: string
 }
 
-type Booking = {
+type AgendaBooking = {
   id: string
   date: string
-  status: string
+  period: 'MORNING' | 'AFTERNOON' | 'EVENING' | 'ALL_DAY'
+  status: 'AVAILABLE' | 'RESERVED'
   area: { id: string; name: string }
-  slot: { startTime: string; endTime: string; dayOfWeek: string }
+  reservation: { id: string; status: 'CONFIRMED' | 'CANCELLED'; member: { id: string; name: string } } | null
+}
+
+const PERIOD_LABEL: Record<string, string> = {
+  MORNING: 'Manhã',
+  AFTERNOON: 'Tarde',
+  EVENING: 'Noite',
+  ALL_DAY: 'Dia todo',
 }
 
 function formatMediaDate(iso: string) {
@@ -142,7 +151,7 @@ function NoticeCarousel({ items }: { items: MarketingMedia[] }) {
 }
 
 // ── Booking highlight ──────────────────────────────────────────────────────────
-function BookingHighlight({ bookings }: { bookings: Booking[] }) {
+function BookingHighlight({ bookings }: { bookings: AgendaBooking[] }) {
   const router = useRouter()
   if (bookings.length === 0) return null
 
@@ -167,7 +176,7 @@ function BookingHighlight({ bookings }: { bookings: Booking[] }) {
         <View style={{ flex: 1 }}>
           <Text style={bk.area}>{next.area.name}</Text>
           <Text style={bk.date}>{formatBookingDate(next.date)}</Text>
-          <Text style={bk.time}>{next.slot.startTime} – {next.slot.endTime}</Text>
+          <Text style={bk.time}>{PERIOD_LABEL[next.period]}</Text>
           {extra > 0 && (
             <Text style={bk.extra}>
               + {extra} outro{extra > 1 ? 's' : ''} agendamento{extra > 1 ? 's' : ''}
@@ -213,31 +222,37 @@ export default function HomeScreen() {
 
   const [notices, setNotices] = useState<MarketingMedia[]>([])
   const [media, setMedia] = useState<MarketingMedia[]>([])
-  const [bookings, setBookings] = useState<Booking[]>([])
+  const [bookings, setBookings] = useState<AgendaBooking[]>([])
   const [loading, setLoading] = useState(true)
 
   const firstName = user?.name?.split(' ')[0] ?? 'Sócio'
 
-  useEffect(() => {
+  const loadBookings = useCallback(() => {
+    if (!user?.memberId) { setBookings([]); return }
     const todayStr = new Date().toISOString().split('T')[0]
-
-    Promise.all([
-      api.get<MarketingMedia[]>('/marketing/active'),
-      user?.memberId
-        ? api.get<Booking[]>(`/bookings?memberId=${user.memberId}&status=CONFIRMADO`)
-        : Promise.resolve([] as Booking[]),
-    ])
-      .then(([mkt, bks]) => {
-        setNotices(mkt.filter((m) => m.type === 'NOTICE'))
-        setMedia(mkt.filter((m) => m.type === 'MEDIA'))
+    api.get<AgendaBooking[]>(`/agendas?memberId=${user.memberId}&dateFrom=${todayStr}`)
+      .then((bks) => {
         const upcoming = bks
-          .filter((b) => new Date(b.date) >= new Date(todayStr))
+          .filter((b) => b.reservation?.status === 'CONFIRMED')
           .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         setBookings(upcoming)
       })
+      .catch(() => setBookings([]))
+  }, [user?.memberId])
+
+  // Marketing: carrega uma vez
+  useEffect(() => {
+    api.get<MarketingMedia[]>('/marketing/active')
+      .then((mkt) => {
+        setNotices(mkt.filter((m) => m.type === 'NOTICE'))
+        setMedia(mkt.filter((m) => m.type === 'MEDIA'))
+      })
       .catch(() => {})
       .finally(() => setLoading(false))
-  }, [user?.memberId])
+  }, [])
+
+  // Agendamentos: atualiza ao ganhar foco (cobre volta da tela de agenda)
+  useFocusEffect(useCallback(() => { loadBookings() }, [loadBookings]))
 
   return (
     <SafeAreaView style={s.root} edges={['top']}>
