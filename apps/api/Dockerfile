@@ -37,6 +37,5 @@ COPY apps/api/prisma.config.ts ./apps/api/
 COPY package.json ./
 
 WORKDIR /app/apps/api
-EXPOSE 3001
 
 CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
