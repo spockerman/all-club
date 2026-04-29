@@ -15,7 +15,7 @@ COPY tsconfig.base.json ./
 COPY packages/shared ./packages/shared
 COPY packages/ui ./packages/ui
 COPY apps/api ./apps/api
-RUN cd apps/api && DATABASE_URL="postgresql://x:x@localhost:5432/x" npx prisma generate && npx tsc
+RUN cd packages/shared && npx tsc && cd /app/apps/api && DATABASE_URL="postgresql://x:x@localhost:5432/x" npx prisma generate && npx tsc
 
 # Stage 3: imagem de produção
 FROM node:20-alpine AS runner
