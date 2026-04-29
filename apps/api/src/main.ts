@@ -1,4 +1,3 @@
-import 'dotenv/config'
 import Fastify from 'fastify'
 import cors from '@fastify/cors'
 import jwt from '@fastify/jwt'
@@ -20,6 +19,10 @@ import { prismaPlugin } from './common/plugins/prisma.plugin.js'
 import { schedulerPlugin } from './common/plugins/scheduler.plugin.js'
 import { smsPlugin } from './common/plugins/sms.plugin.js'
 import { initDummyHash } from './common/utils/password.utils.js'
+
+if (process.env.NODE_ENV !== 'production') {
+  await import('dotenv/config')
+}
 
 const app = Fastify({ logger: true })
 
