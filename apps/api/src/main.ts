@@ -26,7 +26,11 @@ const app = Fastify({ logger: true })
 await initDummyHash()
 
 // Plugins
-await app.register(cors, { origin: true })
+const allowedOrigins = process.env.CORS_ORIGIN
+  ? process.env.CORS_ORIGIN.split(',').map((o) => o.trim())
+  : true
+
+await app.register(cors, { origin: allowedOrigins, credentials: true })
 await app.register(jwt, {
   secret: process.env.JWT_SECRET ?? 'change-me-in-production-min-32-chars!!',
   sign: { expiresIn: '30m' },
