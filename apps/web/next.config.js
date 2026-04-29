@@ -6,9 +6,11 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  webpack: (config) => {
-    config.resolve.alias['react'] = path.dirname(require.resolve('react/package.json'))
-    config.resolve.alias['react-dom'] = path.dirname(require.resolve('react-dom/package.json'))
+  webpack: (config, { isServer }) => {
+    if (!isServer) {
+      config.resolve.alias['react'] = path.dirname(require.resolve('react/package.json'))
+      config.resolve.alias['react-dom'] = path.dirname(require.resolve('react-dom/package.json'))
+    }
     return config
   },
 }
