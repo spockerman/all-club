@@ -27,6 +27,7 @@ COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
 COPY --from=builder /app/packages/shared ./packages/shared
 COPY apps/api/package.json ./apps/api/
+COPY apps/api/prisma.config.ts ./apps/api/
 COPY package.json ./
 
 WORKDIR /app/apps/api
