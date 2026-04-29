@@ -20,10 +20,6 @@ import { schedulerPlugin } from './common/plugins/scheduler.plugin.js'
 import { smsPlugin } from './common/plugins/sms.plugin.js'
 import { initDummyHash } from './common/utils/password.utils.js'
 
-if (process.env.NODE_ENV !== 'production') {
-  await import('dotenv/config')
-}
-
 const app = Fastify({ logger: true })
 
 // Init password utils
