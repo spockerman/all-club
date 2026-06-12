@@ -87,8 +87,8 @@ export class AuthService {
       })
     }
 
-    if (!user || !passwordValid) {
-      await auditFailure(user?.id)
+    if (!user) {
+      await auditFailure()
       throw Object.assign(new Error('Credenciais inválidas ou conta sem acesso.'), {
         statusCode: 401,
       })
